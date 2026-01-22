@@ -37,6 +37,11 @@ mod types;
 pub mod utils;
 mod xerbla;
 
+// Fortran symbol exports (only when NOT using openblas feature)
+// When openblas is enabled, OpenBLAS provides the actual symbols
+#[cfg(not(feature = "openblas"))]
+mod fortran;
+
 #[cfg(feature = "openblas")]
 mod autoregister;
 

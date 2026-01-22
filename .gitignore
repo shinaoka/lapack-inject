@@ -2,5 +2,9 @@
 Cargo.lock
 test_output.log
 *.o
+*.mod
 ctest/xexample_*
 ctest/xtest_*
+ftest/test_dgesv
+ftest/test_dgetrf
+ftest/test_dpotrf
