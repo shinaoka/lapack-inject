@@ -1,10 +1,12 @@
 /target
 Cargo.lock
-test_output.log
+*.log
 *.o
 *.mod
-ctest/xexample_*
-ctest/xtest_*
-ftest/test_dgesv
-ftest/test_dgetrf
-ftest/test_dpotrf
+
+# C test binaries
+ctest/x*
+
+# Fortran test binaries
+ftest/test_*
+!ftest/test_*.f90
