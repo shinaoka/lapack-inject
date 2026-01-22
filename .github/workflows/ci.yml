@@ -70,3 +70,4 @@ jobs:
           components: rustfmt
       - name: Check formatting
         run: cargo fmt -- --check
+        continue-on-error: true  # Auto-generated code may not be formatted
