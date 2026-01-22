@@ -37,8 +37,9 @@
 //! - And many more...
 
 mod backend;
-mod fortran;
+pub mod fortran;
 mod types;
 
 pub use backend::*;
+pub use fortran::*;
 pub use types::*;

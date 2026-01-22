@@ -12,3 +12,7 @@ pub type lapack_int = i64;
 
 /// Alias for backward compatibility
 pub type lapackint = lapack_int;
+
+// Complex type aliases for lapack-sys compatibility
+pub type lapack_complex_float = num_complex::Complex32;
+pub type lapack_complex_double = num_complex::Complex64;
