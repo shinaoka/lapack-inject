@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [stable, nightly]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      - name: Install OpenBLAS (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libopenblas-dev
+
+      - name: Install OpenBLAS (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install openblas
+
+      - name: Build
+        run: cargo build --verbose
+
+      - name: Run tests (linkage check)
+        run: cargo test --verbose
+
+      - name: Run functional tests
+        run: cargo test --test functional_test -- --ignored
+        continue-on-error: true
+
+  # Check that we don't have any warnings
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+          components: clippy
+      - name: Run clippy
+        run: cargo clippy -- -D warnings
+        continue-on-error: true
+
+  # Check formatting
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          toolchain: stable
+          components: rustfmt
+      - name: Check formatting
+        run: cargo fmt -- --check

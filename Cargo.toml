@@ -13,14 +13,12 @@ crate-type = ["rlib", "cdylib"]
 
 [dependencies]
 num-complex = "0.4"
-ctor = { version = "0.2", optional = true }
+paste = "1.0"
 
 [dev-dependencies]
-lapack-sys = "0.14"
-blas-src = { version = "0.10", features = ["openblas"] }
-openblas-src = { version = "0.10", features = ["system"] }
+lapack-sys = "0.15"
+libloading = "0.8"
 
 [features]
 default = []
 ilp64 = []
-openblas = ["ctor"]

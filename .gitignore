@@ -1,4 +1,5 @@
 /target
+/extern
 Cargo.lock
 *.log
 *.o
