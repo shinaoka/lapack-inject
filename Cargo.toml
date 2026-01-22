@@ -2,7 +2,10 @@
 name = "lapack-inject"
 version = "0.1.0"
 edition = "2021"
+authors = ["Hiroshi Shinaoka <shinaoka@gmail.com>"]
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/shinaoka/lapack-inject"
+readme = "README.md"
 description = "LAPACK compatible interface backed by runtime-registered Fortran LAPACK function pointers"
 keywords = ["lapack", "ffi", "linear-algebra", "runtime"]
 categories = ["science", "mathematics", "external-ffi-bindings"]
