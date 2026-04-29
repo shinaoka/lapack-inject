@@ -33,6 +33,9 @@ All 1315 LAPACK functions from lapack-sys are supported, including:
 - Eigenvalue problems (GEEV, SYEV, HEEV, GEES, etc.)
 - And many more...
 
+Additional Netlib LAPACK auxiliary routines not exposed by lapack-sys are also
+available, including the complete-pivoting LU pair `xGETC2` and `xGESC2`.
+
 ## Features
 
 - `ilp64`: Use 64-bit integers for LAPACK indices (ILP64 ABI)
