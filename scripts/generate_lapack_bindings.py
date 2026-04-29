@@ -19,6 +19,77 @@ class Function:
     name: str  # e.g., "dgesv_"
     params: List[Param]
 
+SUPPLEMENTAL_FUNCTIONS = [
+    Function("cgesc2_", [
+        Param("n", "*const c_int"),
+        Param("A", "*const __BindgenComplex<f32>"),
+        Param("lda", "*const c_int"),
+        Param("rhs", "*mut __BindgenComplex<f32>"),
+        Param("ipiv", "*const c_int"),
+        Param("jpiv", "*const c_int"),
+        Param("scale", "*mut f32"),
+    ]),
+    Function("dgesc2_", [
+        Param("n", "*const c_int"),
+        Param("A", "*const f64"),
+        Param("lda", "*const c_int"),
+        Param("rhs", "*mut f64"),
+        Param("ipiv", "*const c_int"),
+        Param("jpiv", "*const c_int"),
+        Param("scale", "*mut f64"),
+    ]),
+    Function("sgesc2_", [
+        Param("n", "*const c_int"),
+        Param("A", "*const f32"),
+        Param("lda", "*const c_int"),
+        Param("rhs", "*mut f32"),
+        Param("ipiv", "*const c_int"),
+        Param("jpiv", "*const c_int"),
+        Param("scale", "*mut f32"),
+    ]),
+    Function("zgesc2_", [
+        Param("n", "*const c_int"),
+        Param("A", "*const __BindgenComplex<f64>"),
+        Param("lda", "*const c_int"),
+        Param("rhs", "*mut __BindgenComplex<f64>"),
+        Param("ipiv", "*const c_int"),
+        Param("jpiv", "*const c_int"),
+        Param("scale", "*mut f64"),
+    ]),
+    Function("cgetc2_", [
+        Param("n", "*const c_int"),
+        Param("A", "*mut __BindgenComplex<f32>"),
+        Param("lda", "*const c_int"),
+        Param("ipiv", "*mut c_int"),
+        Param("jpiv", "*mut c_int"),
+        Param("info", "*mut c_int"),
+    ]),
+    Function("dgetc2_", [
+        Param("n", "*const c_int"),
+        Param("A", "*mut f64"),
+        Param("lda", "*const c_int"),
+        Param("ipiv", "*mut c_int"),
+        Param("jpiv", "*mut c_int"),
+        Param("info", "*mut c_int"),
+    ]),
+    Function("sgetc2_", [
+        Param("n", "*const c_int"),
+        Param("A", "*mut f32"),
+        Param("lda", "*const c_int"),
+        Param("ipiv", "*mut c_int"),
+        Param("jpiv", "*mut c_int"),
+        Param("info", "*mut c_int"),
+    ]),
+    Function("zgetc2_", [
+        Param("n", "*const c_int"),
+        Param("A", "*mut __BindgenComplex<f64>"),
+        Param("lda", "*const c_int"),
+        Param("ipiv", "*mut c_int"),
+        Param("jpiv", "*mut c_int"),
+        Param("info", "*mut c_int"),
+    ]),
+]
+
 def parse_lapack_rs(path: Path) -> List[Function]:
     """Parse lapack.rs and extract function signatures."""
     content = path.read_text()
@@ -172,6 +243,8 @@ def main():
 
     # Filter out lsame_ and other utility functions we handle separately
     functions = [f for f in functions if f.name not in ['lsame_']]
+    existing_names = {f.name for f in functions}
+    functions.extend(f for f in SUPPLEMENTAL_FUNCTIONS if f.name not in existing_names)
 
     # Categorize
     categories = categorize_functions(functions)
@@ -186,7 +259,7 @@ def main():
         '//! function pointers at runtime. Each function has its own `OnceLock` to allow',
         '//! partial registration (only register the functions you need).',
         '//!',
-        '//! Auto-generated from lapack-sys.',
+        '//! Auto-generated from lapack-sys plus supplemental Netlib LAPACK routines.',
         '',
         '#![allow(non_camel_case_types)]',
         '#![allow(non_snake_case)]',
@@ -269,7 +342,7 @@ def main():
         '//! the registered function pointers. This allows lapack-inject to be a drop-in',
         '//! replacement for lapack-src.',
         '//!',
-        '//! Auto-generated from lapack-sys.',
+        '//! Auto-generated from lapack-sys plus supplemental Netlib LAPACK routines.',
         '',
         '#![allow(non_snake_case)]',
         '#![allow(clippy::too_many_arguments)]',

@@ -7,6 +7,17 @@ import subprocess
 import sys
 from pathlib import Path
 
+SUPPLEMENTAL_SYMBOLS = {
+    "sgetc2_",
+    "dgetc2_",
+    "cgetc2_",
+    "zgetc2_",
+    "sgesc2_",
+    "dgesc2_",
+    "cgesc2_",
+    "zgesc2_",
+}
+
 def get_expected_symbols(lapack_sys_path: Path) -> set:
     """Extract expected symbol names from lapack-sys."""
     import re
@@ -15,6 +26,7 @@ def get_expected_symbols(lapack_sys_path: Path) -> set:
     symbols = set()
     for match in re.finditer(pattern, content):
         symbols.add(match.group(1))
+    symbols.update(SUPPLEMENTAL_SYMBOLS)
     return symbols
 
 def get_exported_symbols(dylib_path: Path) -> set:

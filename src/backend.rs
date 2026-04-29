@@ -4,7 +4,7 @@
 //! function pointers at runtime. Each function has its own `OnceLock` to allow
 //! partial registration (only register the functions you need).
 //!
-//! Auto-generated from lapack-sys.
+//! Auto-generated from lapack-sys plus supplemental Netlib LAPACK routines.
 
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
@@ -3439,6 +3439,47 @@ define_lapack_ffi!(zgerqf, ZgerqfFnPtr,
     info: *mut lapackint,
 );
 
+// GESC2
+define_lapack_ffi!(cgesc2, Cgesc2FnPtr,
+    n: *const lapackint,
+    A: *const Complex32,
+    lda: *const lapackint,
+    rhs: *mut Complex32,
+    ipiv: *const lapackint,
+    jpiv: *const lapackint,
+    scale: *mut f32,
+);
+
+define_lapack_ffi!(dgesc2, Dgesc2FnPtr,
+    n: *const lapackint,
+    A: *const f64,
+    lda: *const lapackint,
+    rhs: *mut f64,
+    ipiv: *const lapackint,
+    jpiv: *const lapackint,
+    scale: *mut f64,
+);
+
+define_lapack_ffi!(sgesc2, Sgesc2FnPtr,
+    n: *const lapackint,
+    A: *const f32,
+    lda: *const lapackint,
+    rhs: *mut f32,
+    ipiv: *const lapackint,
+    jpiv: *const lapackint,
+    scale: *mut f32,
+);
+
+define_lapack_ffi!(zgesc2, Zgesc2FnPtr,
+    n: *const lapackint,
+    A: *const Complex64,
+    lda: *const lapackint,
+    rhs: *mut Complex64,
+    ipiv: *const lapackint,
+    jpiv: *const lapackint,
+    scale: *mut f64,
+);
+
 // GESDD
 define_lapack_ffi!(cgesdd, CgesddFnPtr,
     jobz: *const c_char,
@@ -4118,6 +4159,43 @@ define_lapack_ffi!(zgesvxx, ZgesvxxFnPtr,
     params: *mut f64,
     work: *mut Complex64,
     rwork: *mut f64,
+    info: *mut lapackint,
+);
+
+// GETC2
+define_lapack_ffi!(cgetc2, Cgetc2FnPtr,
+    n: *const lapackint,
+    A: *mut Complex32,
+    lda: *const lapackint,
+    ipiv: *mut lapackint,
+    jpiv: *mut lapackint,
+    info: *mut lapackint,
+);
+
+define_lapack_ffi!(dgetc2, Dgetc2FnPtr,
+    n: *const lapackint,
+    A: *mut f64,
+    lda: *const lapackint,
+    ipiv: *mut lapackint,
+    jpiv: *mut lapackint,
+    info: *mut lapackint,
+);
+
+define_lapack_ffi!(sgetc2, Sgetc2FnPtr,
+    n: *const lapackint,
+    A: *mut f32,
+    lda: *const lapackint,
+    ipiv: *mut lapackint,
+    jpiv: *mut lapackint,
+    info: *mut lapackint,
+);
+
+define_lapack_ffi!(zgetc2, Zgetc2FnPtr,
+    n: *const lapackint,
+    A: *mut Complex64,
+    lda: *const lapackint,
+    ipiv: *mut lapackint,
+    jpiv: *mut lapackint,
     info: *mut lapackint,
 );
 

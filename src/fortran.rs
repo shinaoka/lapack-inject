@@ -4,7 +4,7 @@
 //! the registered function pointers. This allows lapack-inject to be a drop-in
 //! replacement for lapack-src.
 //!
-//! Auto-generated from lapack-sys.
+//! Auto-generated from lapack-sys plus supplemental Netlib LAPACK routines.
 
 #![allow(non_snake_case)]
 #![allow(clippy::too_many_arguments)]
@@ -3401,6 +3401,47 @@ export_fortran_symbol!(zgerqf,
     info: *mut lapackint,
 );
 
+// GESC2
+export_fortran_symbol!(cgesc2,
+    n: *const lapackint,
+    A: *const Complex32,
+    lda: *const lapackint,
+    rhs: *mut Complex32,
+    ipiv: *const lapackint,
+    jpiv: *const lapackint,
+    scale: *mut f32,
+);
+
+export_fortran_symbol!(dgesc2,
+    n: *const lapackint,
+    A: *const f64,
+    lda: *const lapackint,
+    rhs: *mut f64,
+    ipiv: *const lapackint,
+    jpiv: *const lapackint,
+    scale: *mut f64,
+);
+
+export_fortran_symbol!(sgesc2,
+    n: *const lapackint,
+    A: *const f32,
+    lda: *const lapackint,
+    rhs: *mut f32,
+    ipiv: *const lapackint,
+    jpiv: *const lapackint,
+    scale: *mut f32,
+);
+
+export_fortran_symbol!(zgesc2,
+    n: *const lapackint,
+    A: *const Complex64,
+    lda: *const lapackint,
+    rhs: *mut Complex64,
+    ipiv: *const lapackint,
+    jpiv: *const lapackint,
+    scale: *mut f64,
+);
+
 // GESDD
 export_fortran_symbol!(cgesdd,
     jobz: *const c_char,
@@ -4080,6 +4121,43 @@ export_fortran_symbol!(zgesvxx,
     params: *mut f64,
     work: *mut Complex64,
     rwork: *mut f64,
+    info: *mut lapackint,
+);
+
+// GETC2
+export_fortran_symbol!(cgetc2,
+    n: *const lapackint,
+    A: *mut Complex32,
+    lda: *const lapackint,
+    ipiv: *mut lapackint,
+    jpiv: *mut lapackint,
+    info: *mut lapackint,
+);
+
+export_fortran_symbol!(dgetc2,
+    n: *const lapackint,
+    A: *mut f64,
+    lda: *const lapackint,
+    ipiv: *mut lapackint,
+    jpiv: *mut lapackint,
+    info: *mut lapackint,
+);
+
+export_fortran_symbol!(sgetc2,
+    n: *const lapackint,
+    A: *mut f32,
+    lda: *const lapackint,
+    ipiv: *mut lapackint,
+    jpiv: *mut lapackint,
+    info: *mut lapackint,
+);
+
+export_fortran_symbol!(zgetc2,
+    n: *const lapackint,
+    A: *mut Complex64,
+    lda: *const lapackint,
+    ipiv: *mut lapackint,
+    jpiv: *mut lapackint,
     info: *mut lapackint,
 );
 
