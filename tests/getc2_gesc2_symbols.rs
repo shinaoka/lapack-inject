@@ -9,6 +9,56 @@ use lapack_inject::*;
 use num_complex::{Complex32, Complex64};
 use std::sync::atomic::{AtomicI32, Ordering};
 
+#[cfg(not(feature = "ilp64"))]
+type Sgetc2CurrentFnPtr = Sgetc2Lp64FnPtr;
+#[cfg(feature = "ilp64")]
+type Sgetc2CurrentFnPtr = Sgetc2Ilp64FnPtr;
+#[cfg(not(feature = "ilp64"))]
+type Dgetc2CurrentFnPtr = Dgetc2Lp64FnPtr;
+#[cfg(feature = "ilp64")]
+type Dgetc2CurrentFnPtr = Dgetc2Ilp64FnPtr;
+#[cfg(not(feature = "ilp64"))]
+type Cgetc2CurrentFnPtr = Cgetc2Lp64FnPtr;
+#[cfg(feature = "ilp64")]
+type Cgetc2CurrentFnPtr = Cgetc2Ilp64FnPtr;
+#[cfg(not(feature = "ilp64"))]
+type Zgetc2CurrentFnPtr = Zgetc2Lp64FnPtr;
+#[cfg(feature = "ilp64")]
+type Zgetc2CurrentFnPtr = Zgetc2Ilp64FnPtr;
+
+#[cfg(not(feature = "ilp64"))]
+type Sgesc2CurrentFnPtr = Sgesc2Lp64FnPtr;
+#[cfg(feature = "ilp64")]
+type Sgesc2CurrentFnPtr = Sgesc2Ilp64FnPtr;
+#[cfg(not(feature = "ilp64"))]
+type Dgesc2CurrentFnPtr = Dgesc2Lp64FnPtr;
+#[cfg(feature = "ilp64")]
+type Dgesc2CurrentFnPtr = Dgesc2Ilp64FnPtr;
+#[cfg(not(feature = "ilp64"))]
+type Cgesc2CurrentFnPtr = Cgesc2Lp64FnPtr;
+#[cfg(feature = "ilp64")]
+type Cgesc2CurrentFnPtr = Cgesc2Ilp64FnPtr;
+#[cfg(not(feature = "ilp64"))]
+type Zgesc2CurrentFnPtr = Zgesc2Lp64FnPtr;
+#[cfg(feature = "ilp64")]
+type Zgesc2CurrentFnPtr = Zgesc2Ilp64FnPtr;
+
+unsafe fn register_dgetc2_current(f: Dgetc2CurrentFnPtr) {
+    #[cfg(not(feature = "ilp64"))]
+    let status = register_dgetc2_lp64(f);
+    #[cfg(feature = "ilp64")]
+    let status = register_dgetc2_ilp64(f);
+    assert!(matches!(status, 0 | 2));
+}
+
+unsafe fn register_dgesc2_current(f: Dgesc2CurrentFnPtr) {
+    #[cfg(not(feature = "ilp64"))]
+    let status = register_dgesc2_lp64(f);
+    #[cfg(feature = "ilp64")]
+    let status = register_dgesc2_ilp64(f);
+    assert!(matches!(status, 0 | 2));
+}
+
 extern "C" {
     fn sgetc2_(
         n: *const lapackint,
@@ -131,22 +181,22 @@ unsafe extern "C" fn fake_dgesc2(
 
 #[test]
 fn getc2_and_gesc2_symbols_have_expected_function_pointer_types() {
-    let _: Sgetc2FnPtr = sgetc2_;
-    let _: Dgetc2FnPtr = dgetc2_;
-    let _: Cgetc2FnPtr = cgetc2_;
-    let _: Zgetc2FnPtr = zgetc2_;
+    let _: Sgetc2CurrentFnPtr = sgetc2_;
+    let _: Dgetc2CurrentFnPtr = dgetc2_;
+    let _: Cgetc2CurrentFnPtr = cgetc2_;
+    let _: Zgetc2CurrentFnPtr = zgetc2_;
 
-    let _: Sgesc2FnPtr = sgesc2_;
-    let _: Dgesc2FnPtr = dgesc2_;
-    let _: Cgesc2FnPtr = cgesc2_;
-    let _: Zgesc2FnPtr = zgesc2_;
+    let _: Sgesc2CurrentFnPtr = sgesc2_;
+    let _: Dgesc2CurrentFnPtr = dgesc2_;
+    let _: Cgesc2CurrentFnPtr = cgesc2_;
+    let _: Zgesc2CurrentFnPtr = zgesc2_;
 }
 
 #[test]
 fn dgetc2_and_dgesc2_dispatch_through_registered_function_pointers() {
     unsafe {
-        register_dgetc2(fake_dgetc2);
-        register_dgesc2(fake_dgesc2);
+        register_dgetc2_current(fake_dgetc2);
+        register_dgesc2_current(fake_dgesc2);
     }
 
     let n: lapackint = 1;

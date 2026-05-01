@@ -70,6 +70,28 @@ int main() {
     print_matrix_rowmajor("LU factorization (row-major)", m, n, a_row, lda);
     print_vector("Pivot indices (row-major)", n, ipiv_row);
 
+    printf("\n=== LAPACKE_dgetrf_64 Test (Row-Major) ===\n");
+
+    double a_row_64[LDA*N] = {
+        6.80, -6.05, -0.45,  8.32,
+       -2.11, -3.30,  2.58,  2.71,
+        5.66,  5.36, -2.70,  4.35,
+        5.97, -4.44,  0.27, -7.17
+    };
+    long long ipiv_64[N];
+
+    info = (lapack_int)LAPACKE_dgetrf_64(LAPACK_ROW_MAJOR, m, n, a_row_64, lda, ipiv_64);
+
+    if (info > 0) {
+        printf("U(%d,%d) is exactly zero - matrix is singular\n", info, info);
+        return 1;
+    } else if (info < 0) {
+        printf("Parameter %d had an illegal value\n", -info);
+        return 1;
+    }
+
+    printf("LAPACKE_dgetrf_64 (row-major) completed successfully\n");
+
     printf("\nAll DGETRF tests PASSED\n");
     return 0;
 }

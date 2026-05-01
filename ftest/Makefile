@@ -10,13 +10,15 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
     OPENBLAS_LIB ?= /opt/homebrew/opt/openblas/lib
     DL_LIBS =
+    RPATH_FLAG = -Wl,-rpath,$(abspath ../target/release)
 else
     OPENBLAS_LIB ?= /usr/lib/x86_64-linux-gnu/openblas-pthread
     DL_LIBS = -ldl
+    RPATH_FLAG = -Wl,-rpath,$(abspath ../target/release)
 endif
 
 # Link init code, lapack-inject, then OpenBLAS for BLAS
-LDFLAGS = -L../target/release -llapack_inject -L$(OPENBLAS_LIB) -lopenblas $(DL_LIBS)
+LDFLAGS = -L../target/release $(RPATH_FLAG) -llapack_inject -L$(OPENBLAS_LIB) -lopenblas $(DL_LIBS)
 
 .PHONY: all clean test build-lib
 
