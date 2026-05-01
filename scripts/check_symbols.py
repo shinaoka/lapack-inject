@@ -3,20 +3,11 @@
 Check that all expected LAPACK symbols are exported from the built library.
 """
 
+import argparse
 import subprocess
 import sys
 from pathlib import Path
 
-SUPPLEMENTAL_SYMBOLS = {
-    "sgetc2_",
-    "dgetc2_",
-    "cgetc2_",
-    "zgetc2_",
-    "sgesc2_",
-    "dgesc2_",
-    "cgesc2_",
-    "zgesc2_",
-}
 
 def get_expected_symbols(lapack_sys_path: Path) -> set:
     """Extract expected symbol names from lapack-sys."""
@@ -26,8 +17,8 @@ def get_expected_symbols(lapack_sys_path: Path) -> set:
     symbols = set()
     for match in re.finditer(pattern, content):
         symbols.add(match.group(1))
-    symbols.update(SUPPLEMENTAL_SYMBOLS)
     return symbols
+
 
 def get_exported_symbols(dylib_path: Path) -> set:
     """Get exported symbols from the built library."""
@@ -41,30 +32,58 @@ def get_exported_symbols(dylib_path: Path) -> set:
     for line in result.stdout.split('\n'):
         parts = line.split()
         if len(parts) >= 3 and parts[1] == 'T':
-            # Remove leading underscore (macOS convention)
             name = parts[2].lstrip('_')
             if name.endswith('_'):
                 symbols.add(name)
     return symbols
 
-def main():
-    lapack_sys = Path("/Users/hiroshi/git/lapack-sys/src/lapack.rs")
 
-    # Try both debug and release
-    for profile in ['debug', 'release']:
-        dylib = Path(f"/Users/hiroshi/projects/tensor4all/lapack-inject/target/{profile}/liblapack_inject.dylib")
-        if dylib.exists():
-            break
-    else:
-        print("Error: Library not found. Run 'cargo build' first.")
+def get_generated_set() -> set:
+    """Return the set of LAPACK symbols the generator currently produces."""
+    return {
+        "sgesv_", "dgesv_", "cgesv_", "zgesv_",
+        "sgetrf_", "dgetrf_", "cgetrf_", "zgetrf_",
+        "sgetrs_", "dgetrs_", "cgetrs_", "zgetrs_",
+        "sgetri_", "dgetri_", "cgetri_", "zgetri_",
+        "spotrf_", "dpotrf_", "cpotrf_", "zpotrf_",
+        "ssyev_", "dsyev_",
+        "sgesvd_", "dgesvd_", "cgesvd_", "zgesvd_",
+        "sgeqrf_", "dgeqrf_", "cgeqrf_", "zgeqrf_",
+        "sorgqr_", "dorgqr_",
+        "cungqr_", "zungqr_",
+        "strtrs_", "dtrtrs_", "ctrtrs_", "ztrtrs_",
+        "sgeev_", "dgeev_", "cgeev_", "zgeev_",
+        "cheev_", "zheev_",
+        "sgetc2_", "dgetc2_", "cgetc2_", "zgetc2_",
+        "sgesc2_", "dgesc2_", "cgesc2_", "zgesc2_",
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--lapack-sys-path', type=str, required=True,
+                        help='Path to lapack-sys lapack.rs')
+    parser.add_argument('--library', type=str, required=True,
+                        help='Path to the built liblapack_inject library')
+    parser.add_argument('--all', action='store_true',
+                        help='Check against all lapack-sys symbols instead of generated set')
+    args = parser.parse_args()
+
+    lapack_sys = Path(args.lapack_sys_path)
+    dylib = Path(args.library)
+
+    if not dylib.exists():
+        print(f"Error: Library not found: {dylib}")
         sys.exit(1)
 
     print(f"Checking {dylib}...")
 
-    expected = get_expected_symbols(lapack_sys)
-    exported = get_exported_symbols(dylib)
+    if args.all:
+        expected = get_expected_symbols(lapack_sys)
+    else:
+        expected = get_generated_set()
 
-    # Filter to only LAPACK symbols (s/d/c/z prefix)
+    exported = get_exported_symbols(dylib)
     lapack_exported = {s for s in exported if s[0] in 'sdcz' and s.endswith('_')}
 
     print(f"Expected symbols: {len(expected)}")
@@ -86,11 +105,12 @@ def main():
             print(f"  {s}")
 
     if not missing:
-        print("\n✓ All expected symbols are exported!")
+        print("\nAll expected symbols are exported!")
         return 0
     else:
-        print(f"\n✗ {len(missing)} symbols missing")
+        print(f"\n{len(missing)} symbols missing")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
