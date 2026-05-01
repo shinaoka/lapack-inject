@@ -245,30 +245,43 @@ def generate_fortran_export(func: Function) -> str:
     lp64_params = []
     ilp64_lines = []
     ilp64_params = []
+    lp64_writeback = []
+    ilp64_writeback = []
     for p in func.params:
         if p.type_.startswith('*const c_int'):
             lp64_name = f"{p.name}_lp64"
             ilp64_name = f"{p.name}_ilp64"
-            lp64_lines.append(f"            let {lp64_name}: *const i32 = {p.name} as *const i32;")
-            ilp64_lines.append(f"            let {ilp64_name}: *const i64 = {p.name} as *const i64;")
-            lp64_params.append(lp64_name)
-            ilp64_params.append(ilp64_name)
+            lp64_lines.append(f"            let {lp64_name}: i32 = *{p.name} as i32;")
+            ilp64_lines.append(f"            let {ilp64_name}: i64 = *{p.name} as i64;")
+            lp64_params.append(f"&{lp64_name}")
+            ilp64_params.append(f"&{ilp64_name}")
         elif p.type_.startswith('*mut c_int'):
             lp64_name = f"{p.name}_lp64"
             ilp64_name = f"{p.name}_ilp64"
-            lp64_lines.append(f"            let {lp64_name}: *mut i32 = {p.name} as *mut i32;")
-            ilp64_lines.append(f"            let {ilp64_name}: *mut i64 = {p.name} as *mut i64;")
-            lp64_params.append(lp64_name)
-            ilp64_params.append(ilp64_name)
+            lp64_lines.append(f"            let mut {lp64_name}: i32 = *{p.name} as i32;")
+            ilp64_lines.append(f"            let mut {ilp64_name}: i64 = *{p.name} as i64;")
+            lp64_params.append(f"&mut {lp64_name}")
+            ilp64_params.append(f"&mut {ilp64_name}")
+            lp64_writeback.append(f"            *{p.name} = {lp64_name} as lapackint;")
+            ilp64_writeback.append(f"            *{p.name} = {ilp64_name} as lapackint;")
         else:
             lp64_params.append(p.name)
             ilp64_params.append(p.name)
 
-    params_str = ',\n'.join(params)
-    lp64_calls_str = ', '.join(lp64_params)
-    ilp64_calls_str = ', '.join(ilp64_params)
+    lp64_wb_str = '\n'.join(lp64_writeback)
+    ilp64_wb_str = '\n'.join(ilp64_writeback)
     lp64_lines_str = '\n'.join(lp64_lines)
     ilp64_lines_str = '\n'.join(ilp64_lines)
+    lp64_calls_str = ', '.join(lp64_params)
+    ilp64_calls_str = ', '.join(ilp64_params)
+    params_str = ',\n'.join(params)
+
+    has_lp64_wb = bool(lp64_writeback)
+    has_ilp64_wb = bool(ilp64_writeback)
+    lp64_call_block = f"""            fun({lp64_calls_str})""" + (f""";
+{lp64_wb_str}""" if has_lp64_wb else "")
+    ilp64_call_block = f"""            fun({ilp64_calls_str})""" + (f""";
+{ilp64_wb_str}""" if has_ilp64_wb else "")
 
     return f"""#[no_mangle]
 pub unsafe extern "C" fn {func.name}(
@@ -281,11 +294,11 @@ pub unsafe extern "C" fn {func.name}(
     match provider {{
         {provider_name}::Lp64(fun) => {{
 {lp64_lines_str}
-            fun({lp64_calls_str})
+{lp64_call_block}
         }}
         {provider_name}::Ilp64(fun) => {{
 {ilp64_lines_str}
-            fun({ilp64_calls_str})
+{ilp64_call_block}
         }}
     }}
 }}"""
