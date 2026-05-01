@@ -11,7 +11,11 @@ use lapack_sys;
 use libloading::Library;
 
 fn load_built_lapack_inject() -> Library {
-    let profile = if cfg!(debug_assertions) { "debug" } else { "release" };
+    let profile = if cfg!(debug_assertions) {
+        "debug"
+    } else {
+        "release"
+    };
     let lib_name = if cfg!(target_os = "macos") {
         "liblapack_inject.dylib"
     } else if cfg!(target_os = "windows") {

@@ -1,8 +1,12 @@
 extern crate lapack_inject;
 
+#[cfg(not(feature = "ilp64"))]
 use core::ptr::{read_unaligned, write_unaligned};
+#[cfg(not(feature = "ilp64"))]
 use lapack_inject::*;
+#[cfg(not(feature = "ilp64"))]
 use num_complex::Complex64;
+#[cfg(not(feature = "ilp64"))]
 use std::ffi::c_char;
 
 #[cfg(not(feature = "ilp64"))]
@@ -41,8 +45,14 @@ fn lp64_dgeqrf_symbol_dispatches_to_ilp64_provider() {
     let mut info = -1_i32;
     unsafe {
         lapack_sys::dgeqrf_(
-            &m, &n, a.as_mut_ptr(), &lda, tau.as_mut_ptr(),
-            work.as_mut_ptr(), &lwork, &mut info,
+            &m,
+            &n,
+            a.as_mut_ptr(),
+            &lda,
+            tau.as_mut_ptr(),
+            work.as_mut_ptr(),
+            &lwork,
+            &mut info,
         );
     }
     assert_eq!(info, 0);
@@ -88,8 +98,15 @@ fn lp64_dorgqr_symbol_dispatches_to_ilp64_provider() {
     let mut info = -1_i32;
     unsafe {
         lapack_sys::dorgqr_(
-            &m, &n, &k, a.as_mut_ptr(), &lda, tau.as_ptr(),
-            work.as_mut_ptr(), &lwork, &mut info,
+            &m,
+            &n,
+            &k,
+            a.as_mut_ptr(),
+            &lda,
+            tau.as_ptr(),
+            work.as_mut_ptr(),
+            &lwork,
+            &mut info,
         );
     }
     assert_eq!(info, 0);
@@ -138,8 +155,16 @@ fn lp64_dtrtrs_symbol_dispatches_to_ilp64_provider() {
     let mut info = -1_i32;
     unsafe {
         lapack_sys::dtrtrs_(
-            &uplo, &trans, &diag, &n, &nrhs, a.as_ptr(), &lda,
-            b.as_mut_ptr(), &ldb, &mut info,
+            &uplo,
+            &trans,
+            &diag,
+            &n,
+            &nrhs,
+            a.as_ptr(),
+            &lda,
+            b.as_mut_ptr(),
+            &ldb,
+            &mut info,
         );
     }
     assert_eq!(info, 0);
@@ -194,10 +219,16 @@ fn lp64_zheev_symbol_dispatches_to_ilp64_provider() {
     let mut info = -1_i32;
     unsafe {
         lapack_sys::zheev_(
-            &jobz, &uplo, &n, a.as_mut_ptr() as *mut lapack_complex_double,
-            &lda, w.as_mut_ptr(),
+            &jobz,
+            &uplo,
+            &n,
+            a.as_mut_ptr() as *mut lapack_complex_double,
+            &lda,
+            w.as_mut_ptr(),
             work.as_mut_ptr() as *mut lapack_complex_double,
-            &lwork, rwork.as_mut_ptr(), &mut info,
+            &lwork,
+            rwork.as_mut_ptr(),
+            &mut info,
         );
     }
     assert_eq!(info, 0);
@@ -213,10 +244,10 @@ unsafe extern "C" fn fake_dgeev_ilp64(
     lda: *const i64,
     wr: *mut f64,
     wi: *mut f64,
-    vl: *mut f64,
-    ldvl: *const i64,
-    vr: *mut f64,
-    ldvr: *const i64,
+    _vl: *mut f64,
+    _ldvl: *const i64,
+    _vr: *mut f64,
+    _ldvr: *const i64,
     work: *mut f64,
     lwork: *const i64,
     info: *mut i64,
@@ -254,11 +285,20 @@ fn lp64_dgeev_symbol_dispatches_to_ilp64_provider() {
     let mut info = -1_i32;
     unsafe {
         lapack_sys::dgeev_(
-            &jobvl, &jobvr, &n, a.as_mut_ptr(), &lda,
-            wr.as_mut_ptr(), wi.as_mut_ptr(),
-            vl.as_mut_ptr(), &ldvl,
-            vr.as_mut_ptr(), &ldvr,
-            work.as_mut_ptr(), &lwork, &mut info,
+            &jobvl,
+            &jobvr,
+            &n,
+            a.as_mut_ptr(),
+            &lda,
+            wr.as_mut_ptr(),
+            wi.as_mut_ptr(),
+            vl.as_mut_ptr(),
+            &ldvl,
+            vr.as_mut_ptr(),
+            &ldvr,
+            work.as_mut_ptr(),
+            &lwork,
+            &mut info,
         );
     }
     assert_eq!(info, 0);
