@@ -28,6 +28,9 @@
 //! pointers at runtime, and this crate provides those symbols to downstream
 //! crates that expect a LAPACK provider.
 //!
+//! LAPACKE-style C entry points are exported for `dgesv`, `dgetrf`, `dgetri`,
+//! and `dpotrf`, including `_64` variants and row-major layout handling.
+//!
 //! ## Supported Functions
 //!
 //! The current generated surface supports `xGESV`, `xGETRF`, `xGETRS`,
@@ -35,8 +38,10 @@
 
 mod backend;
 pub mod fortran;
+pub mod lapacke;
 mod types;
 
 pub use backend::*;
 pub use fortran::*;
+pub use lapacke::*;
 pub use types::*;

@@ -20,6 +20,17 @@ unsafe {
 // Now lapack_inject exports dgesv_ symbol that can be used by other crates
 ```
 
+The LAPACKE-style C entry points are also exported for the current Phase 2
+surface:
+
+- `LAPACKE_dgesv` / `LAPACKE_dgesv_64`
+- `LAPACKE_dgetrf` / `LAPACKE_dgetrf_64`
+- `LAPACKE_dgetri` / `LAPACKE_dgetri_64`
+- `LAPACKE_dpotrf` / `LAPACKE_dpotrf_64`
+
+Both row-major (`LAPACK_ROW_MAJOR`) and column-major (`LAPACK_COL_MAJOR`) layouts
+are supported for those wrappers.
+
 ## lapack-src/lapack-sys Compatibility
 
 This crate exports a generated subset of Fortran-style LAPACK symbols such as
@@ -37,17 +48,22 @@ registered.
 
 ## Supported Functions
 
-The current generated Phase 1 surface supports:
+The generated Fortran surface supports:
 
 - `xGESV`, `xGETRF`, `xGETRS`, `xGETRI`, `xPOTRF`, and `xGESVD`
 - `sSYEV` and `dSYEV`
 - Supplemental complete-pivoting LU routines `xGETC2` and `xGESC2`
 
-Full LAPACKE C wrappers and row-major support are planned as a later phase.
+The LAPACKE surface currently covers the double-precision routines listed
+above in the Usage section.
 
 ## Features
 
-- `ilp64`: Export Fortran symbols with 64-bit `lapackint` parameters.
+- `ilp64`: Export Fortran symbols with 64-bit `lapackint` parameters. This is
+  still needed for Fortran ABI compatibility because `dgesv_` has the same
+  symbol name for LP64 and ILP64 callers. The LAPACKE C API exposes `_64`
+  functions separately, so those C entry points do not require this feature to
+  select 64-bit integer arguments.
 
 ## License
 

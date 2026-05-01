@@ -31,7 +31,12 @@ Phase 1 success criteria:
 
 ### Phase 2: LAPACKE C API
 
-Add `src/lapacke.rs`, `LAPACK_ROW_MAJOR`, `LAPACK_COL_MAJOR`, and exported `LAPACKE_*` entry points after Phase 1 is stable. Keep this phase separate because correct row-major handling depends on routine-specific matrix layout rules.
+Add `src/lapacke.rs`, `LAPACK_ROW_MAJOR`, `LAPACK_COL_MAJOR`, and exported `LAPACKE_*` entry points after Phase 1 is stable. The implemented minimum scope is `dgesv`, `dgetrf`, `dgetri`, and `dpotrf`, each with row-major support and `_64` variants.
+
+Important ABI note:
+
+- Fortran symbols such as `dgesv_` still require compile-time LP64/ILP64 selection because the LP64 and ILP64 ABI share the same symbol name.
+- LAPACKE C symbols can expose both widths at once because `_64` functions have distinct names.
 
 ---
 

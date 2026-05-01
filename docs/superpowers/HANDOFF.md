@@ -7,7 +7,7 @@
 
 ## 現在の状態
 
-Phase 1 の dual Fortran backend はビルド・テストが通る状態です。
+Phase 1 の dual Fortran backend と、Phase 2 の最小 LAPACKE wrapper はビルド・テストが通る状態です。
 
 ### 完了したこと
 
@@ -33,7 +33,17 @@ Phase 1 の dual Fortran backend はビルド・テストが通る状態です�
 
 5. **README / crate docs を現状に合わせて更新**
    - 旧API例と「全1315関数対応」の記述を削除。
-   - 現在のPhase 1対応範囲を明記。
+   - 現在の対応範囲を明記。
+
+6. **`src/lapacke.rs` を追加**
+   - `LAPACKE_dgesv`, `LAPACKE_dgetrf`, `LAPACKE_dgetri`, `LAPACKE_dpotrf` を追加。
+   - 各関数に `_64` variant を追加。
+   - row-major / column-major の両方に対応。
+   - LAPACKE C APIは `_64` の別名を持てるため、`ilp64` featureなしで64-bit integer entrypointを公開します。
+
+7. **C/Fortran外部テストを新APIへ更新**
+   - `ctest` はローカルの最小 `lapacke.h` と `lapacke_example_aux.c` を使うように変更。
+   - `ctest` / `ftest` のOpenBLAS初期化は `register_*_lp64()` を使うように変更。
 
 ## 現在の生成対象
 
@@ -48,6 +58,15 @@ Phase 1 の dual Fortran backend はビルド・テストが通る状態です�
 
 合計 34 function bindings。
 
+## 現在のLAPACKE対象
+
+- `LAPACKE_dgesv`, `LAPACKE_dgesv_64`
+- `LAPACKE_dgetrf`, `LAPACKE_dgetrf_64`
+- `LAPACKE_dgetri`, `LAPACKE_dgetri_64`
+- `LAPACKE_dpotrf`, `LAPACKE_dpotrf_64`
+
+`LAPACK_ROW_MAJOR` と `LAPACK_COL_MAJOR` の両方に対応しています。
+
 ## 検証結果
 
 以下は通過済みです。
@@ -59,6 +78,8 @@ cargo test --no-run
 cargo test --no-run --features ilp64
 cargo test
 cargo test --features ilp64
+make -C ctest test
+make -C ftest test
 ```
 
 `functional_test.rs` の実LAPACK連携テストは `#[ignore]` のままです。
@@ -67,7 +88,9 @@ cargo test --features ilp64
 
 - Cross-ABI fallback は現在 pointer cast です。ビルドABIとprovider ABIが一致する通常パスは通りますが、`i32` caller から ILP64 provider、または `i64` caller から LP64 provider へ実データを変換する完全なmarshal実装ではありません。
 - `register_*_lp64()` / `register_*_ilp64()` はRustのfn pointer型を受け取るため、null pointer検査はしていません。戻り値は `0` 成功、`2` 登録済みです。
-- `src/lapacke.rs`、`LAPACK_ROW_MAJOR` / `LAPACK_COL_MAJOR`、LAPACKE row-major wrapper はまだ未実装です。これは Phase 2 で扱います。
+- Fortran互換シンボル（例: `dgesv_`）はLP64/ILP64で同じシンボル名を使うため、`ilp64` featureによるcompile-time ABI選択を残しています。provider登録自体はfeatureなしでLP64/ILP64両方を同時に持てます。
+- LAPACKE C APIは `_64` entrypointを持つため、featureなしでLP64/ILP64のC ABIを同時公開できます。
+- LAPACKE wrapperは現時点ではdouble precisionの4関数だけです。全LAPACKE関数への拡張は未実装です。
 
 ## 生成スクリプトの実行方法
 
@@ -85,6 +108,8 @@ python3 scripts/generate_lapack_bindings.py \
 | `src/backend_gen.rs` | 自動生成: `Lp64FnPtr` / `Ilp64FnPtr` 型 + `define_dual_backend!` 呼び出し |
 | `src/fortran.rs` | プリアンブル（imports）+ `include!("fortran_gen.rs")` |
 | `src/fortran_gen.rs` | 自動生成: `#[no_mangle]` Fortran export with dual dispatch |
+| `src/lapacke.rs` | 手書き: 最小LAPACKE wrapper + row-major変換 + `_64` variants |
 | `scripts/generate_lapack_bindings.py` | コード生成スクリプト |
 | `tests/functional_test.rs` | 実LAPACK連携テスト（ignore） |
 | `tests/getc2_gesc2_symbols.rs` | supplemental symbol dispatch test |
+| `tests/lapacke_test.rs` | LAPACKE row-major / `_64` tests |
