@@ -9,11 +9,12 @@ This crate allows you to use LAPACK functions while the actual computation is pe
 ## Usage
 
 ```rust
-use lapack_inject::register_dgesv;
+use lapack_inject::register_dgesv_lp64;
 
 // Register Fortran dgesv pointer (e.g., from scipy or Julia)
 unsafe {
-    register_dgesv(dgesv_ptr);
+    let status = register_dgesv_lp64(dgesv_ptr);
+    assert_eq!(status, 0);
 }
 
 // Now lapack_inject exports dgesv_ symbol that can be used by other crates
@@ -21,24 +22,32 @@ unsafe {
 
 ## lapack-src/lapack-sys Compatibility
 
-This crate exports all Fortran-style LAPACK symbols defined in lapack-sys (e.g., `dgesv_`, `dgetrf_`, etc.). These symbols are compatible with the lapack-src crate. Register function pointers at runtime, and this crate will provide the symbols that other crates expect from lapack-src.
+This crate exports a generated subset of Fortran-style LAPACK symbols such as
+`dgesv_`, `dgetrf_`, and `dgesc2_`. Register function pointers at runtime, and
+this crate provides those symbols to downstream crates that expect a LAPACK
+provider.
+
+Each generated routine has explicit LP64 and ILP64 registration functions:
+
+- `register_dgesv_lp64(f)` for providers using 32-bit LAPACK integers
+- `register_dgesv_ilp64(f)` for providers using 64-bit LAPACK integers
+
+Registration returns `0` on success and `2` if that provider was already
+registered.
 
 ## Supported Functions
 
-All 1315 LAPACK functions from lapack-sys are supported, including:
+The current generated Phase 1 surface supports:
 
-- Linear solvers (GESV, GBSV, POSV, SYSV, etc.)
-- Factorizations (GETRF, POTRF, GEQRF, etc.)
-- SVD (GESVD, GESDD, etc.)
-- Eigenvalue problems (GEEV, SYEV, HEEV, GEES, etc.)
-- And many more...
+- `xGESV`, `xGETRF`, `xGETRS`, `xGETRI`, `xPOTRF`, and `xGESVD`
+- `sSYEV` and `dSYEV`
+- Supplemental complete-pivoting LU routines `xGETC2` and `xGESC2`
 
-Additional Netlib LAPACK auxiliary routines not exposed by lapack-sys are also
-available, including the complete-pivoting LU pair `xGETC2` and `xGESC2`.
+Full LAPACKE C wrappers and row-major support are planned as a later phase.
 
 ## Features
 
-- `ilp64`: Use 64-bit integers for LAPACK indices (ILP64 ABI)
+- `ilp64`: Export Fortran symbols with 64-bit `lapackint` parameters.
 
 ## License
 

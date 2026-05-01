@@ -10,11 +10,12 @@
 //! ## Usage
 //!
 //! ```ignore
-//! use lapack_inject::register_dgesv;
+//! use lapack_inject::register_dgesv_lp64;
 //!
 //! // Register Fortran dgesv pointer (e.g., from scipy or Julia)
 //! unsafe {
-//!     register_dgesv(dgesv_ptr);
+//!     let status = register_dgesv_lp64(dgesv_ptr);
+//!     assert_eq!(status, 0);
 //! }
 //!
 //! // Now lapack_inject exports dgesv_ symbol that can be used by other crates
@@ -22,19 +23,15 @@
 //!
 //! ## lapack-src/lapack-sys Compatibility
 //!
-//! This crate exports all Fortran-style LAPACK symbols defined in lapack-sys
-//! (e.g., `dgesv_`, `dgetrf_`, etc.). These symbols are compatible with the
-//! lapack-src crate. Register function pointers at runtime, and this crate
-//! will provide the symbols that other crates expect from lapack-src.
+//! This crate exports a generated subset of Fortran-style LAPACK symbols such
+//! as `dgesv_`, `dgetrf_`, and `dgesc2_`. Register LP64 or ILP64 function
+//! pointers at runtime, and this crate provides those symbols to downstream
+//! crates that expect a LAPACK provider.
 //!
 //! ## Supported Functions
 //!
-//! All 1315 LAPACK functions from lapack-sys are supported, including:
-//! - Linear solvers (GESV, GBSV, POSV, SYSV, etc.)
-//! - Factorizations (GETRF, POTRF, GEQRF, etc.)
-//! - SVD (GESVD, GESDD, etc.)
-//! - Eigenvalue problems (GEEV, SYEV, HEEV, GEES, etc.)
-//! - And many more...
+//! The current generated surface supports `xGESV`, `xGETRF`, `xGETRS`,
+//! `xGETRI`, `xPOTRF`, `xGESVD`, `sSYEV`, `dSYEV`, `xGETC2`, and `xGESC2`.
 
 mod backend;
 pub mod fortran;
