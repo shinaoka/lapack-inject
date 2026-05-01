@@ -100,16 +100,44 @@ pub unsafe extern "C" fn cgesc2_(
         Cgesc2Provider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
-            let jpiv_lp64: i32 = *jpiv as i32;
-            fun(&n_lp64, A, &lda_lp64, rhs, &ipiv_lp64, &jpiv_lp64, scale)
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_lp64_vec_ptr = jpiv;
+            #[cfg(feature = "ilp64")]
+            let n_jpiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec: Vec<i32> = (0..n_jpiv_lp64).map(|i| *jpiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec_ptr = jpiv_lp64_vec.as_ptr();
+            fun(&n_lp64, A, &lda_lp64, rhs, ipiv_lp64_vec_ptr, jpiv_lp64_vec_ptr, scale)
         }
         Cgesc2Provider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
-            let jpiv_ilp64: i64 = *jpiv as i64;
-            fun(&n_ilp64, A, &lda_ilp64, rhs, &ipiv_ilp64, &jpiv_ilp64, scale)
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
+            #[cfg(feature = "ilp64")]
+            let jpiv_ilp64_vec_ptr = jpiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_jpiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec: Vec<i64> = (0..n_jpiv_ilp64).map(|i| *jpiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec_ptr = jpiv_ilp64_vec.as_ptr();
+            fun(&n_ilp64, A, &lda_ilp64, rhs, ipiv_ilp64_vec_ptr, jpiv_ilp64_vec_ptr, scale)
         }
     }
 }
@@ -134,22 +162,38 @@ pub unsafe extern "C" fn cgesv_(
             let n_lp64: i32 = *n as i32;
             let nrhs_lp64: i32 = *nrhs as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
             let ldb_lp64: i32 = *ldb as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, &nrhs_lp64, A, &lda_lp64, &mut ipiv_lp64, B, &ldb_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
+            fun(&n_lp64, &nrhs_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, B, &ldb_lp64, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         CgesvProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let nrhs_ilp64: i64 = *nrhs as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
             let ldb_ilp64: i64 = *ldb as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, &nrhs_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, B, &ldb_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
+            fun(&n_ilp64, &nrhs_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, B, &ldb_ilp64, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -220,23 +264,55 @@ pub unsafe extern "C" fn cgetc2_(
         Cgetc2Provider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
-            let mut jpiv_lp64: i32 = *jpiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_lp64_vec_ptr = jpiv;
+            #[cfg(feature = "ilp64")]
+            let n_jpiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut jpiv_lp64_vec: Vec<i32> = vec![0i32; n_jpiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec_ptr = jpiv_lp64_vec.as_mut_ptr();
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, A, &lda_lp64, &mut ipiv_lp64, &mut jpiv_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
-            *jpiv = jpiv_lp64 as lapackint;
+            fun(&n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, jpiv_lp64_vec_ptr, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_jpiv_lp64 { *jpiv.add(i) = jpiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         Cgetc2Provider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
-            let mut jpiv_ilp64: i64 = *jpiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
+            #[cfg(feature = "ilp64")]
+            let jpiv_ilp64_vec_ptr = jpiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_jpiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut jpiv_ilp64_vec: Vec<i64> = vec![0i64; n_jpiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec_ptr = jpiv_ilp64_vec.as_mut_ptr();
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, &mut jpiv_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
-            *jpiv = jpiv_ilp64 as lapackint;
+            fun(&n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, jpiv_ilp64_vec_ptr, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_jpiv_ilp64 { *jpiv.add(i) = jpiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -260,20 +336,36 @@ pub unsafe extern "C" fn cgetrf_(
             let m_lp64: i32 = *m as i32;
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = std::cmp::min(m_lp64,n_lp64) as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
             let mut info_lp64: i32 = *info as i32;
-            fun(&m_lp64, &n_lp64, A, &lda_lp64, &mut ipiv_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
+            fun(&m_lp64, &n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         CgetrfProvider::Ilp64(fun) => {
             let m_ilp64: i64 = *m as i64;
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = std::cmp::min(m_ilp64,n_ilp64) as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
             let mut info_ilp64: i64 = *info as i64;
-            fun(&m_ilp64, &n_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
+            fun(&m_ilp64, &n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -297,19 +389,33 @@ pub unsafe extern "C" fn cgetri_(
         CgetriProvider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
             let lwork_lp64: i32 = *lwork as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, A, &lda_lp64, &ipiv_lp64, work, &lwork_lp64, &mut info_lp64);
+            fun(&n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, work, &lwork_lp64, &mut info_lp64);
             *info = info_lp64 as lapackint;
         }
         CgetriProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
             let lwork_ilp64: i64 = *lwork as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, A, &lda_ilp64, &ipiv_ilp64, work, &lwork_ilp64, &mut info_ilp64);
+            fun(&n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, work, &lwork_ilp64, &mut info_ilp64);
             *info = info_ilp64 as lapackint;
         }
     }
@@ -336,20 +442,34 @@ pub unsafe extern "C" fn cgetrs_(
             let n_lp64: i32 = *n as i32;
             let nrhs_lp64: i32 = *nrhs as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
             let ldb_lp64: i32 = *ldb as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(trans, &n_lp64, &nrhs_lp64, A, &lda_lp64, &ipiv_lp64, B, &ldb_lp64, &mut info_lp64);
+            fun(trans, &n_lp64, &nrhs_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, B, &ldb_lp64, &mut info_lp64);
             *info = info_lp64 as lapackint;
         }
         CgetrsProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let nrhs_ilp64: i64 = *nrhs as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
             let ldb_ilp64: i64 = *ldb as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(trans, &n_ilp64, &nrhs_ilp64, A, &lda_ilp64, &ipiv_ilp64, B, &ldb_ilp64, &mut info_ilp64);
+            fun(trans, &n_ilp64, &nrhs_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, B, &ldb_ilp64, &mut info_ilp64);
             *info = info_ilp64 as lapackint;
         }
     }
@@ -601,16 +721,44 @@ pub unsafe extern "C" fn dgesc2_(
         Dgesc2Provider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
-            let jpiv_lp64: i32 = *jpiv as i32;
-            fun(&n_lp64, A, &lda_lp64, rhs, &ipiv_lp64, &jpiv_lp64, scale)
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_lp64_vec_ptr = jpiv;
+            #[cfg(feature = "ilp64")]
+            let n_jpiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec: Vec<i32> = (0..n_jpiv_lp64).map(|i| *jpiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec_ptr = jpiv_lp64_vec.as_ptr();
+            fun(&n_lp64, A, &lda_lp64, rhs, ipiv_lp64_vec_ptr, jpiv_lp64_vec_ptr, scale)
         }
         Dgesc2Provider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
-            let jpiv_ilp64: i64 = *jpiv as i64;
-            fun(&n_ilp64, A, &lda_ilp64, rhs, &ipiv_ilp64, &jpiv_ilp64, scale)
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
+            #[cfg(feature = "ilp64")]
+            let jpiv_ilp64_vec_ptr = jpiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_jpiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec: Vec<i64> = (0..n_jpiv_ilp64).map(|i| *jpiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec_ptr = jpiv_ilp64_vec.as_ptr();
+            fun(&n_ilp64, A, &lda_ilp64, rhs, ipiv_ilp64_vec_ptr, jpiv_ilp64_vec_ptr, scale)
         }
     }
 }
@@ -635,22 +783,38 @@ pub unsafe extern "C" fn dgesv_(
             let n_lp64: i32 = *n as i32;
             let nrhs_lp64: i32 = *nrhs as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
             let ldb_lp64: i32 = *ldb as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, &nrhs_lp64, A, &lda_lp64, &mut ipiv_lp64, B, &ldb_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
+            fun(&n_lp64, &nrhs_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, B, &ldb_lp64, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         DgesvProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let nrhs_ilp64: i64 = *nrhs as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
             let ldb_ilp64: i64 = *ldb as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, &nrhs_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, B, &ldb_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
+            fun(&n_ilp64, &nrhs_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, B, &ldb_ilp64, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -720,23 +884,55 @@ pub unsafe extern "C" fn dgetc2_(
         Dgetc2Provider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
-            let mut jpiv_lp64: i32 = *jpiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_lp64_vec_ptr = jpiv;
+            #[cfg(feature = "ilp64")]
+            let n_jpiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut jpiv_lp64_vec: Vec<i32> = vec![0i32; n_jpiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec_ptr = jpiv_lp64_vec.as_mut_ptr();
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, A, &lda_lp64, &mut ipiv_lp64, &mut jpiv_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
-            *jpiv = jpiv_lp64 as lapackint;
+            fun(&n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, jpiv_lp64_vec_ptr, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_jpiv_lp64 { *jpiv.add(i) = jpiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         Dgetc2Provider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
-            let mut jpiv_ilp64: i64 = *jpiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
+            #[cfg(feature = "ilp64")]
+            let jpiv_ilp64_vec_ptr = jpiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_jpiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut jpiv_ilp64_vec: Vec<i64> = vec![0i64; n_jpiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec_ptr = jpiv_ilp64_vec.as_mut_ptr();
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, &mut jpiv_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
-            *jpiv = jpiv_ilp64 as lapackint;
+            fun(&n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, jpiv_ilp64_vec_ptr, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_jpiv_ilp64 { *jpiv.add(i) = jpiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -760,20 +956,36 @@ pub unsafe extern "C" fn dgetrf_(
             let m_lp64: i32 = *m as i32;
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = std::cmp::min(m_lp64,n_lp64) as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
             let mut info_lp64: i32 = *info as i32;
-            fun(&m_lp64, &n_lp64, A, &lda_lp64, &mut ipiv_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
+            fun(&m_lp64, &n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         DgetrfProvider::Ilp64(fun) => {
             let m_ilp64: i64 = *m as i64;
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = std::cmp::min(m_ilp64,n_ilp64) as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
             let mut info_ilp64: i64 = *info as i64;
-            fun(&m_ilp64, &n_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
+            fun(&m_ilp64, &n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -797,19 +1009,33 @@ pub unsafe extern "C" fn dgetri_(
         DgetriProvider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
             let lwork_lp64: i32 = *lwork as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, A, &lda_lp64, &ipiv_lp64, work, &lwork_lp64, &mut info_lp64);
+            fun(&n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, work, &lwork_lp64, &mut info_lp64);
             *info = info_lp64 as lapackint;
         }
         DgetriProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
             let lwork_ilp64: i64 = *lwork as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, A, &lda_ilp64, &ipiv_ilp64, work, &lwork_ilp64, &mut info_ilp64);
+            fun(&n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, work, &lwork_ilp64, &mut info_ilp64);
             *info = info_ilp64 as lapackint;
         }
     }
@@ -836,20 +1062,34 @@ pub unsafe extern "C" fn dgetrs_(
             let n_lp64: i32 = *n as i32;
             let nrhs_lp64: i32 = *nrhs as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
             let ldb_lp64: i32 = *ldb as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(trans, &n_lp64, &nrhs_lp64, A, &lda_lp64, &ipiv_lp64, B, &ldb_lp64, &mut info_lp64);
+            fun(trans, &n_lp64, &nrhs_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, B, &ldb_lp64, &mut info_lp64);
             *info = info_lp64 as lapackint;
         }
         DgetrsProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let nrhs_ilp64: i64 = *nrhs as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
             let ldb_ilp64: i64 = *ldb as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(trans, &n_ilp64, &nrhs_ilp64, A, &lda_ilp64, &ipiv_ilp64, B, &ldb_ilp64, &mut info_ilp64);
+            fun(trans, &n_ilp64, &nrhs_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, B, &ldb_ilp64, &mut info_ilp64);
             *info = info_ilp64 as lapackint;
         }
     }
@@ -1100,16 +1340,44 @@ pub unsafe extern "C" fn sgesc2_(
         Sgesc2Provider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
-            let jpiv_lp64: i32 = *jpiv as i32;
-            fun(&n_lp64, A, &lda_lp64, rhs, &ipiv_lp64, &jpiv_lp64, scale)
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_lp64_vec_ptr = jpiv;
+            #[cfg(feature = "ilp64")]
+            let n_jpiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec: Vec<i32> = (0..n_jpiv_lp64).map(|i| *jpiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec_ptr = jpiv_lp64_vec.as_ptr();
+            fun(&n_lp64, A, &lda_lp64, rhs, ipiv_lp64_vec_ptr, jpiv_lp64_vec_ptr, scale)
         }
         Sgesc2Provider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
-            let jpiv_ilp64: i64 = *jpiv as i64;
-            fun(&n_ilp64, A, &lda_ilp64, rhs, &ipiv_ilp64, &jpiv_ilp64, scale)
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
+            #[cfg(feature = "ilp64")]
+            let jpiv_ilp64_vec_ptr = jpiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_jpiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec: Vec<i64> = (0..n_jpiv_ilp64).map(|i| *jpiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec_ptr = jpiv_ilp64_vec.as_ptr();
+            fun(&n_ilp64, A, &lda_ilp64, rhs, ipiv_ilp64_vec_ptr, jpiv_ilp64_vec_ptr, scale)
         }
     }
 }
@@ -1134,22 +1402,38 @@ pub unsafe extern "C" fn sgesv_(
             let n_lp64: i32 = *n as i32;
             let nrhs_lp64: i32 = *nrhs as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
             let ldb_lp64: i32 = *ldb as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, &nrhs_lp64, A, &lda_lp64, &mut ipiv_lp64, B, &ldb_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
+            fun(&n_lp64, &nrhs_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, B, &ldb_lp64, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         SgesvProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let nrhs_ilp64: i64 = *nrhs as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
             let ldb_ilp64: i64 = *ldb as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, &nrhs_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, B, &ldb_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
+            fun(&n_ilp64, &nrhs_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, B, &ldb_ilp64, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -1219,23 +1503,55 @@ pub unsafe extern "C" fn sgetc2_(
         Sgetc2Provider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
-            let mut jpiv_lp64: i32 = *jpiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_lp64_vec_ptr = jpiv;
+            #[cfg(feature = "ilp64")]
+            let n_jpiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut jpiv_lp64_vec: Vec<i32> = vec![0i32; n_jpiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec_ptr = jpiv_lp64_vec.as_mut_ptr();
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, A, &lda_lp64, &mut ipiv_lp64, &mut jpiv_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
-            *jpiv = jpiv_lp64 as lapackint;
+            fun(&n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, jpiv_lp64_vec_ptr, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_jpiv_lp64 { *jpiv.add(i) = jpiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         Sgetc2Provider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
-            let mut jpiv_ilp64: i64 = *jpiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
+            #[cfg(feature = "ilp64")]
+            let jpiv_ilp64_vec_ptr = jpiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_jpiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut jpiv_ilp64_vec: Vec<i64> = vec![0i64; n_jpiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec_ptr = jpiv_ilp64_vec.as_mut_ptr();
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, &mut jpiv_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
-            *jpiv = jpiv_ilp64 as lapackint;
+            fun(&n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, jpiv_ilp64_vec_ptr, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_jpiv_ilp64 { *jpiv.add(i) = jpiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -1259,20 +1575,36 @@ pub unsafe extern "C" fn sgetrf_(
             let m_lp64: i32 = *m as i32;
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = std::cmp::min(m_lp64,n_lp64) as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
             let mut info_lp64: i32 = *info as i32;
-            fun(&m_lp64, &n_lp64, A, &lda_lp64, &mut ipiv_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
+            fun(&m_lp64, &n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         SgetrfProvider::Ilp64(fun) => {
             let m_ilp64: i64 = *m as i64;
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = std::cmp::min(m_ilp64,n_ilp64) as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
             let mut info_ilp64: i64 = *info as i64;
-            fun(&m_ilp64, &n_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
+            fun(&m_ilp64, &n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -1296,19 +1628,33 @@ pub unsafe extern "C" fn sgetri_(
         SgetriProvider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
             let lwork_lp64: i32 = *lwork as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, A, &lda_lp64, &ipiv_lp64, work, &lwork_lp64, &mut info_lp64);
+            fun(&n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, work, &lwork_lp64, &mut info_lp64);
             *info = info_lp64 as lapackint;
         }
         SgetriProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
             let lwork_ilp64: i64 = *lwork as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, A, &lda_ilp64, &ipiv_ilp64, work, &lwork_ilp64, &mut info_ilp64);
+            fun(&n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, work, &lwork_ilp64, &mut info_ilp64);
             *info = info_ilp64 as lapackint;
         }
     }
@@ -1335,20 +1681,34 @@ pub unsafe extern "C" fn sgetrs_(
             let n_lp64: i32 = *n as i32;
             let nrhs_lp64: i32 = *nrhs as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
             let ldb_lp64: i32 = *ldb as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(trans, &n_lp64, &nrhs_lp64, A, &lda_lp64, &ipiv_lp64, B, &ldb_lp64, &mut info_lp64);
+            fun(trans, &n_lp64, &nrhs_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, B, &ldb_lp64, &mut info_lp64);
             *info = info_lp64 as lapackint;
         }
         SgetrsProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let nrhs_ilp64: i64 = *nrhs as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
             let ldb_ilp64: i64 = *ldb as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(trans, &n_ilp64, &nrhs_ilp64, A, &lda_ilp64, &ipiv_ilp64, B, &ldb_ilp64, &mut info_ilp64);
+            fun(trans, &n_ilp64, &nrhs_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, B, &ldb_ilp64, &mut info_ilp64);
             *info = info_ilp64 as lapackint;
         }
     }
@@ -1599,16 +1959,44 @@ pub unsafe extern "C" fn zgesc2_(
         Zgesc2Provider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
-            let jpiv_lp64: i32 = *jpiv as i32;
-            fun(&n_lp64, A, &lda_lp64, rhs, &ipiv_lp64, &jpiv_lp64, scale)
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_lp64_vec_ptr = jpiv;
+            #[cfg(feature = "ilp64")]
+            let n_jpiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec: Vec<i32> = (0..n_jpiv_lp64).map(|i| *jpiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec_ptr = jpiv_lp64_vec.as_ptr();
+            fun(&n_lp64, A, &lda_lp64, rhs, ipiv_lp64_vec_ptr, jpiv_lp64_vec_ptr, scale)
         }
         Zgesc2Provider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
-            let jpiv_ilp64: i64 = *jpiv as i64;
-            fun(&n_ilp64, A, &lda_ilp64, rhs, &ipiv_ilp64, &jpiv_ilp64, scale)
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
+            #[cfg(feature = "ilp64")]
+            let jpiv_ilp64_vec_ptr = jpiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_jpiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec: Vec<i64> = (0..n_jpiv_ilp64).map(|i| *jpiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec_ptr = jpiv_ilp64_vec.as_ptr();
+            fun(&n_ilp64, A, &lda_ilp64, rhs, ipiv_ilp64_vec_ptr, jpiv_ilp64_vec_ptr, scale)
         }
     }
 }
@@ -1633,22 +2021,38 @@ pub unsafe extern "C" fn zgesv_(
             let n_lp64: i32 = *n as i32;
             let nrhs_lp64: i32 = *nrhs as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
             let ldb_lp64: i32 = *ldb as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, &nrhs_lp64, A, &lda_lp64, &mut ipiv_lp64, B, &ldb_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
+            fun(&n_lp64, &nrhs_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, B, &ldb_lp64, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         ZgesvProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let nrhs_ilp64: i64 = *nrhs as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
             let ldb_ilp64: i64 = *ldb as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, &nrhs_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, B, &ldb_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
+            fun(&n_ilp64, &nrhs_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, B, &ldb_ilp64, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -1719,23 +2123,55 @@ pub unsafe extern "C" fn zgetc2_(
         Zgetc2Provider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
-            let mut jpiv_lp64: i32 = *jpiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_lp64_vec_ptr = jpiv;
+            #[cfg(feature = "ilp64")]
+            let n_jpiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let mut jpiv_lp64_vec: Vec<i32> = vec![0i32; n_jpiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let jpiv_lp64_vec_ptr = jpiv_lp64_vec.as_mut_ptr();
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, A, &lda_lp64, &mut ipiv_lp64, &mut jpiv_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
-            *jpiv = jpiv_lp64 as lapackint;
+            fun(&n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, jpiv_lp64_vec_ptr, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_jpiv_lp64 { *jpiv.add(i) = jpiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         Zgetc2Provider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
-            let mut jpiv_ilp64: i64 = *jpiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
+            #[cfg(feature = "ilp64")]
+            let jpiv_ilp64_vec_ptr = jpiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_jpiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut jpiv_ilp64_vec: Vec<i64> = vec![0i64; n_jpiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let jpiv_ilp64_vec_ptr = jpiv_ilp64_vec.as_mut_ptr();
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, &mut jpiv_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
-            *jpiv = jpiv_ilp64 as lapackint;
+            fun(&n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, jpiv_ilp64_vec_ptr, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_jpiv_ilp64 { *jpiv.add(i) = jpiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -1759,20 +2195,36 @@ pub unsafe extern "C" fn zgetrf_(
             let m_lp64: i32 = *m as i32;
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let mut ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = std::cmp::min(m_lp64,n_lp64) as usize;
+            #[cfg(feature = "ilp64")]
+            let mut ipiv_lp64_vec: Vec<i32> = vec![0i32; n_ipiv_lp64];
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_mut_ptr();
             let mut info_lp64: i32 = *info as i32;
-            fun(&m_lp64, &n_lp64, A, &lda_lp64, &mut ipiv_lp64, &mut info_lp64);
-            *ipiv = ipiv_lp64 as lapackint;
+            fun(&m_lp64, &n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, &mut info_lp64);
+            #[cfg(feature = "ilp64")]
+            for i in 0..n_ipiv_lp64 { *ipiv.add(i) = ipiv_lp64_vec[i] as lapackint; }
             *info = info_lp64 as lapackint;
         }
         ZgetrfProvider::Ilp64(fun) => {
             let m_ilp64: i64 = *m as i64;
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let mut ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = std::cmp::min(m_ilp64,n_ilp64) as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let mut ipiv_ilp64_vec: Vec<i64> = vec![0i64; n_ipiv_ilp64];
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_mut_ptr();
             let mut info_ilp64: i64 = *info as i64;
-            fun(&m_ilp64, &n_ilp64, A, &lda_ilp64, &mut ipiv_ilp64, &mut info_ilp64);
-            *ipiv = ipiv_ilp64 as lapackint;
+            fun(&m_ilp64, &n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, &mut info_ilp64);
+            #[cfg(not(feature = "ilp64"))]
+            for i in 0..n_ipiv_ilp64 { *ipiv.add(i) = ipiv_ilp64_vec[i] as lapackint; }
             *info = info_ilp64 as lapackint;
         }
     }
@@ -1796,19 +2248,33 @@ pub unsafe extern "C" fn zgetri_(
         ZgetriProvider::Lp64(fun) => {
             let n_lp64: i32 = *n as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
             let lwork_lp64: i32 = *lwork as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(&n_lp64, A, &lda_lp64, &ipiv_lp64, work, &lwork_lp64, &mut info_lp64);
+            fun(&n_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, work, &lwork_lp64, &mut info_lp64);
             *info = info_lp64 as lapackint;
         }
         ZgetriProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
             let lwork_ilp64: i64 = *lwork as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(&n_ilp64, A, &lda_ilp64, &ipiv_ilp64, work, &lwork_ilp64, &mut info_ilp64);
+            fun(&n_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, work, &lwork_ilp64, &mut info_ilp64);
             *info = info_ilp64 as lapackint;
         }
     }
@@ -1835,20 +2301,34 @@ pub unsafe extern "C" fn zgetrs_(
             let n_lp64: i32 = *n as i32;
             let nrhs_lp64: i32 = *nrhs as i32;
             let lda_lp64: i32 = *lda as i32;
-            let ipiv_lp64: i32 = *ipiv as i32;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_lp64_vec_ptr = ipiv;
+            #[cfg(feature = "ilp64")]
+            let n_ipiv_lp64 = n_lp64 as usize;
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec: Vec<i32> = (0..n_ipiv_lp64).map(|i| *ipiv.add(i) as i32).collect();
+            #[cfg(feature = "ilp64")]
+            let ipiv_lp64_vec_ptr = ipiv_lp64_vec.as_ptr();
             let ldb_lp64: i32 = *ldb as i32;
             let mut info_lp64: i32 = *info as i32;
-            fun(trans, &n_lp64, &nrhs_lp64, A, &lda_lp64, &ipiv_lp64, B, &ldb_lp64, &mut info_lp64);
+            fun(trans, &n_lp64, &nrhs_lp64, A, &lda_lp64, ipiv_lp64_vec_ptr, B, &ldb_lp64, &mut info_lp64);
             *info = info_lp64 as lapackint;
         }
         ZgetrsProvider::Ilp64(fun) => {
             let n_ilp64: i64 = *n as i64;
             let nrhs_ilp64: i64 = *nrhs as i64;
             let lda_ilp64: i64 = *lda as i64;
-            let ipiv_ilp64: i64 = *ipiv as i64;
+            #[cfg(feature = "ilp64")]
+            let ipiv_ilp64_vec_ptr = ipiv;
+            #[cfg(not(feature = "ilp64"))]
+            let n_ipiv_ilp64 = n_ilp64 as usize;
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec: Vec<i64> = (0..n_ipiv_ilp64).map(|i| *ipiv.add(i) as i64).collect();
+            #[cfg(not(feature = "ilp64"))]
+            let ipiv_ilp64_vec_ptr = ipiv_ilp64_vec.as_ptr();
             let ldb_ilp64: i64 = *ldb as i64;
             let mut info_ilp64: i64 = *info as i64;
-            fun(trans, &n_ilp64, &nrhs_ilp64, A, &lda_ilp64, &ipiv_ilp64, B, &ldb_ilp64, &mut info_ilp64);
+            fun(trans, &n_ilp64, &nrhs_ilp64, A, &lda_ilp64, ipiv_ilp64_vec_ptr, B, &ldb_ilp64, &mut info_ilp64);
             *info = info_ilp64 as lapackint;
         }
     }

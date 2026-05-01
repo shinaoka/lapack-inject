@@ -304,3 +304,159 @@ fn lp64_dgeev_symbol_dispatches_to_ilp64_provider() {
     assert_eq!(info, 0);
     assert_eq!(wr[0], 4.0);
 }
+
+#[cfg(not(feature = "ilp64"))]
+unsafe extern "C" fn fake_dgetrf_ilp64(
+    m: *const i64,
+    n: *const i64,
+    _a: *mut f64,
+    lda: *const i64,
+    ipiv: *mut i64,
+    info: *mut i64,
+) {
+    assert_eq!(read_unaligned(m), 3);
+    assert_eq!(read_unaligned(n), 3);
+    assert_eq!(read_unaligned(lda), 3);
+    // Write pivot array [1, 3, 2]
+    *ipiv.add(0) = 1i64;
+    *ipiv.add(1) = 3i64;
+    *ipiv.add(2) = 2i64;
+    write_unaligned(info, 0);
+}
+
+#[cfg(not(feature = "ilp64"))]
+#[test]
+fn lp64_dgetrf_symbol_bridges_ipiv_array_to_ilp64_provider() {
+    unsafe {
+        assert!(matches!(register_dgetrf_ilp64(fake_dgetrf_ilp64), 0 | 2));
+    }
+    let m = 3_i32;
+    let n = 3_i32;
+    let mut a = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+    let lda = 3_i32;
+    let mut ipiv = [0_i32; 3];
+    let mut info = -1_i32;
+    unsafe {
+        lapack_sys::dgetrf_(&m, &n, a.as_mut_ptr(), &lda, ipiv.as_mut_ptr(), &mut info);
+    }
+    assert_eq!(info, 0);
+    assert_eq!(ipiv, [1, 3, 2], "all pivot elements should be bridged back");
+}
+
+#[cfg(not(feature = "ilp64"))]
+unsafe extern "C" fn fake_dgetc2_ilp64(
+    n: *const i64,
+    _a: *mut f64,
+    lda: *const i64,
+    ipiv: *mut i64,
+    jpiv: *mut i64,
+    info: *mut i64,
+) {
+    assert_eq!(read_unaligned(n), 3);
+    assert_eq!(read_unaligned(lda), 3);
+    *ipiv.add(0) = 3i64;
+    *ipiv.add(1) = 1i64;
+    *ipiv.add(2) = 2i64;
+    *jpiv.add(0) = 2i64;
+    *jpiv.add(1) = 3i64;
+    *jpiv.add(2) = 1i64;
+    write_unaligned(info, 0);
+}
+
+#[cfg(not(feature = "ilp64"))]
+#[test]
+fn lp64_dgetc2_symbol_bridges_ipiv_jpiv_arrays_to_ilp64_provider() {
+    extern "C" {
+        fn dgetc2_(
+            n: *const lapackint,
+            a: *mut f64,
+            lda: *const lapackint,
+            ipiv: *mut lapackint,
+            jpiv: *mut lapackint,
+            info: *mut lapackint,
+        );
+    }
+    unsafe {
+        assert!(matches!(register_dgetc2_ilp64(fake_dgetc2_ilp64), 0 | 2));
+    }
+    let n: lapackint = 3;
+    let lda: lapackint = 3;
+    let mut a = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+    let mut ipiv: [lapackint; 3] = [0; 3];
+    let mut jpiv: [lapackint; 3] = [0; 3];
+    let mut info: lapackint = -1;
+    unsafe {
+        dgetc2_(
+            &n,
+            a.as_mut_ptr(),
+            &lda,
+            ipiv.as_mut_ptr(),
+            jpiv.as_mut_ptr(),
+            &mut info,
+        );
+    }
+    assert_eq!(info, 0);
+    assert_eq!(ipiv, [3, 1, 2], "all ipiv elements bridged back");
+    assert_eq!(jpiv, [2, 3, 1], "all jpiv elements bridged back");
+}
+
+#[cfg(not(feature = "ilp64"))]
+unsafe extern "C" fn fake_dgesc2_ilp64(
+    n: *const i64,
+    a: *const f64,
+    lda: *const i64,
+    rhs: *mut f64,
+    ipiv: *const i64,
+    jpiv: *const i64,
+    scale: *mut f64,
+) {
+    assert_eq!(read_unaligned(n), 3);
+    assert_eq!(read_unaligned(lda), 3);
+    assert_eq!(*ipiv.add(0), 3i64, "ipiv[0] bridged");
+    assert_eq!(*ipiv.add(1), 1i64, "ipiv[1] bridged");
+    assert_eq!(*ipiv.add(2), 2i64, "ipiv[2] bridged");
+    assert_eq!(*jpiv.add(0), 2i64, "jpiv[0] bridged");
+    assert_eq!(*jpiv.add(1), 3i64, "jpiv[1] bridged");
+    assert_eq!(*jpiv.add(2), 1i64, "jpiv[2] bridged");
+    *rhs = *a;
+    *scale = 1.0;
+}
+
+#[cfg(not(feature = "ilp64"))]
+#[test]
+fn lp64_dgesc2_symbol_bridges_ipiv_jpiv_arrays_to_ilp64_provider() {
+    extern "C" {
+        fn dgesc2_(
+            n: *const lapackint,
+            a: *const f64,
+            lda: *const lapackint,
+            rhs: *mut f64,
+            ipiv: *const lapackint,
+            jpiv: *const lapackint,
+            scale: *mut f64,
+        );
+    }
+    unsafe {
+        assert!(matches!(register_dgesc2_ilp64(fake_dgesc2_ilp64), 0 | 2));
+    }
+    let n: lapackint = 3;
+    let lda: lapackint = 3;
+    let a = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+    let mut rhs = [0.0_f64];
+    let ipiv: [lapackint; 3] = [3, 1, 2];
+    let jpiv: [lapackint; 3] = [2, 3, 1];
+    let mut scale = 0.0_f64;
+    unsafe {
+        dgesc2_(
+            &n,
+            a.as_ptr(),
+            &lda,
+            rhs.as_mut_ptr(),
+            ipiv.as_ptr(),
+            jpiv.as_ptr(),
+            &mut scale,
+        );
+    }
+    assert_eq!(rhs[0], 1.0);
+    assert_eq!(scale, 1.0);
+}
