@@ -28,6 +28,12 @@ CORE_FUNCTIONS = {
     "spotrf_", "dpotrf_", "cpotrf_", "zpotrf_",
     "ssyev_", "dsyev_",
     "sgesvd_", "dgesvd_", "cgesvd_", "zgesvd_",
+    "sgeqrf_", "dgeqrf_", "cgeqrf_", "zgeqrf_",
+    "sorgqr_", "dorgqr_",
+    "cungqr_", "zungqr_",
+    "strtrs_", "dtrtrs_", "ctrtrs_", "ztrtrs_",
+    "sgeev_", "dgeev_", "cgeev_", "zgeev_",
+    "cheev_", "zheev_",
     "sgetc2_", "dgetc2_", "cgetc2_", "zgetc2_",
     "sgesc2_", "dgesc2_", "cgesc2_", "zgesc2_",
 }

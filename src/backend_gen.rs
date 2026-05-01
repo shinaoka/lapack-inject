@@ -1,5 +1,61 @@
 // Auto-generated: LP64/ILP64 dual function pointer types.
 
+pub type CgeevLp64FnPtr = unsafe extern "C" fn(
+    jobvl: *const c_char,
+    jobvr: *const c_char,
+    n: *const i32,
+    A: *mut num_complex::Complex32,
+    lda: *const i32,
+    W: *mut num_complex::Complex32,
+    VL: *mut num_complex::Complex32,
+    ldvl: *const i32,
+    VR: *mut num_complex::Complex32,
+    ldvr: *const i32,
+    work: *mut num_complex::Complex32,
+    lwork: *const i32,
+    rwork: *mut f32,
+    info: *mut i32,
+);
+pub type CgeevIlp64FnPtr = unsafe extern "C" fn(
+    jobvl: *const c_char,
+    jobvr: *const c_char,
+    n: *const i64,
+    A: *mut num_complex::Complex32,
+    lda: *const i64,
+    W: *mut num_complex::Complex32,
+    VL: *mut num_complex::Complex32,
+    ldvl: *const i64,
+    VR: *mut num_complex::Complex32,
+    ldvr: *const i64,
+    work: *mut num_complex::Complex32,
+    lwork: *const i64,
+    rwork: *mut f32,
+    info: *mut i64,
+);
+define_dual_backend!(cgeev, CgeevLp64FnPtr, CgeevIlp64FnPtr);
+
+pub type CgeqrfLp64FnPtr = unsafe extern "C" fn(
+    m: *const i32,
+    n: *const i32,
+    A: *mut num_complex::Complex32,
+    lda: *const i32,
+    tau: *mut num_complex::Complex32,
+    work: *mut num_complex::Complex32,
+    lwork: *const i32,
+    info: *mut i32,
+);
+pub type CgeqrfIlp64FnPtr = unsafe extern "C" fn(
+    m: *const i64,
+    n: *const i64,
+    A: *mut num_complex::Complex32,
+    lda: *const i64,
+    tau: *mut num_complex::Complex32,
+    work: *mut num_complex::Complex32,
+    lwork: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(cgeqrf, CgeqrfLp64FnPtr, CgeqrfIlp64FnPtr);
+
 pub type Cgesc2Lp64FnPtr = unsafe extern "C" fn(
     n: *const i32,
     A: *const num_complex::Complex32,
@@ -158,6 +214,32 @@ pub type CgetrsIlp64FnPtr = unsafe extern "C" fn(
 );
 define_dual_backend!(cgetrs, CgetrsLp64FnPtr, CgetrsIlp64FnPtr);
 
+pub type CheevLp64FnPtr = unsafe extern "C" fn(
+    jobz: *const c_char,
+    uplo: *const c_char,
+    n: *const i32,
+    A: *mut num_complex::Complex32,
+    lda: *const i32,
+    W: *mut f32,
+    work: *mut num_complex::Complex32,
+    lwork: *const i32,
+    rwork: *mut f32,
+    info: *mut i32,
+);
+pub type CheevIlp64FnPtr = unsafe extern "C" fn(
+    jobz: *const c_char,
+    uplo: *const c_char,
+    n: *const i64,
+    A: *mut num_complex::Complex32,
+    lda: *const i64,
+    W: *mut f32,
+    work: *mut num_complex::Complex32,
+    lwork: *const i64,
+    rwork: *mut f32,
+    info: *mut i64,
+);
+define_dual_backend!(cheev, CheevLp64FnPtr, CheevIlp64FnPtr);
+
 pub type CpotrfLp64FnPtr = unsafe extern "C" fn(
     uplo: *const c_char,
     n: *const i32,
@@ -173,6 +255,112 @@ pub type CpotrfIlp64FnPtr = unsafe extern "C" fn(
     info: *mut i64,
 );
 define_dual_backend!(cpotrf, CpotrfLp64FnPtr, CpotrfIlp64FnPtr);
+
+pub type CtrtrsLp64FnPtr = unsafe extern "C" fn(
+    uplo: *const c_char,
+    trans: *const c_char,
+    diag: *const c_char,
+    n: *const i32,
+    nrhs: *const i32,
+    A: *const num_complex::Complex32,
+    lda: *const i32,
+    B: *mut num_complex::Complex32,
+    ldb: *const i32,
+    info: *mut i32,
+);
+pub type CtrtrsIlp64FnPtr = unsafe extern "C" fn(
+    uplo: *const c_char,
+    trans: *const c_char,
+    diag: *const c_char,
+    n: *const i64,
+    nrhs: *const i64,
+    A: *const num_complex::Complex32,
+    lda: *const i64,
+    B: *mut num_complex::Complex32,
+    ldb: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(ctrtrs, CtrtrsLp64FnPtr, CtrtrsIlp64FnPtr);
+
+pub type CungqrLp64FnPtr = unsafe extern "C" fn(
+    m: *const i32,
+    n: *const i32,
+    k: *const i32,
+    A: *mut num_complex::Complex32,
+    lda: *const i32,
+    tau: *const num_complex::Complex32,
+    work: *mut num_complex::Complex32,
+    lwork: *const i32,
+    info: *mut i32,
+);
+pub type CungqrIlp64FnPtr = unsafe extern "C" fn(
+    m: *const i64,
+    n: *const i64,
+    k: *const i64,
+    A: *mut num_complex::Complex32,
+    lda: *const i64,
+    tau: *const num_complex::Complex32,
+    work: *mut num_complex::Complex32,
+    lwork: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(cungqr, CungqrLp64FnPtr, CungqrIlp64FnPtr);
+
+pub type DgeevLp64FnPtr = unsafe extern "C" fn(
+    jobvl: *const c_char,
+    jobvr: *const c_char,
+    n: *const i32,
+    A: *mut f64,
+    lda: *const i32,
+    WR: *mut f64,
+    WI: *mut f64,
+    VL: *mut f64,
+    ldvl: *const i32,
+    VR: *mut f64,
+    ldvr: *const i32,
+    work: *mut f64,
+    lwork: *const i32,
+    info: *mut i32,
+);
+pub type DgeevIlp64FnPtr = unsafe extern "C" fn(
+    jobvl: *const c_char,
+    jobvr: *const c_char,
+    n: *const i64,
+    A: *mut f64,
+    lda: *const i64,
+    WR: *mut f64,
+    WI: *mut f64,
+    VL: *mut f64,
+    ldvl: *const i64,
+    VR: *mut f64,
+    ldvr: *const i64,
+    work: *mut f64,
+    lwork: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(dgeev, DgeevLp64FnPtr, DgeevIlp64FnPtr);
+
+pub type DgeqrfLp64FnPtr = unsafe extern "C" fn(
+    m: *const i32,
+    n: *const i32,
+    A: *mut f64,
+    lda: *const i32,
+    tau: *mut f64,
+    work: *mut f64,
+    lwork: *const i32,
+    info: *mut i32,
+);
+pub type DgeqrfIlp64FnPtr = unsafe extern "C" fn(
+    m: *const i64,
+    n: *const i64,
+    A: *mut f64,
+    lda: *const i64,
+    tau: *mut f64,
+    work: *mut f64,
+    lwork: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(dgeqrf, DgeqrfLp64FnPtr, DgeqrfIlp64FnPtr);
 
 pub type Dgesc2Lp64FnPtr = unsafe extern "C" fn(
     n: *const i32,
@@ -330,6 +518,30 @@ pub type DgetrsIlp64FnPtr = unsafe extern "C" fn(
 );
 define_dual_backend!(dgetrs, DgetrsLp64FnPtr, DgetrsIlp64FnPtr);
 
+pub type DorgqrLp64FnPtr = unsafe extern "C" fn(
+    m: *const i32,
+    n: *const i32,
+    k: *const i32,
+    A: *mut f64,
+    lda: *const i32,
+    tau: *const f64,
+    work: *mut f64,
+    lwork: *const i32,
+    info: *mut i32,
+);
+pub type DorgqrIlp64FnPtr = unsafe extern "C" fn(
+    m: *const i64,
+    n: *const i64,
+    k: *const i64,
+    A: *mut f64,
+    lda: *const i64,
+    tau: *const f64,
+    work: *mut f64,
+    lwork: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(dorgqr, DorgqrLp64FnPtr, DorgqrIlp64FnPtr);
+
 pub type DpotrfLp64FnPtr = unsafe extern "C" fn(
     uplo: *const c_char,
     n: *const i32,
@@ -369,6 +581,88 @@ pub type DsyevIlp64FnPtr = unsafe extern "C" fn(
     info: *mut i64,
 );
 define_dual_backend!(dsyev, DsyevLp64FnPtr, DsyevIlp64FnPtr);
+
+pub type DtrtrsLp64FnPtr = unsafe extern "C" fn(
+    uplo: *const c_char,
+    trans: *const c_char,
+    diag: *const c_char,
+    n: *const i32,
+    nrhs: *const i32,
+    A: *const f64,
+    lda: *const i32,
+    B: *mut f64,
+    ldb: *const i32,
+    info: *mut i32,
+);
+pub type DtrtrsIlp64FnPtr = unsafe extern "C" fn(
+    uplo: *const c_char,
+    trans: *const c_char,
+    diag: *const c_char,
+    n: *const i64,
+    nrhs: *const i64,
+    A: *const f64,
+    lda: *const i64,
+    B: *mut f64,
+    ldb: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(dtrtrs, DtrtrsLp64FnPtr, DtrtrsIlp64FnPtr);
+
+pub type SgeevLp64FnPtr = unsafe extern "C" fn(
+    jobvl: *const c_char,
+    jobvr: *const c_char,
+    n: *const i32,
+    A: *mut f32,
+    lda: *const i32,
+    WR: *mut f32,
+    WI: *mut f32,
+    VL: *mut f32,
+    ldvl: *const i32,
+    VR: *mut f32,
+    ldvr: *const i32,
+    work: *mut f32,
+    lwork: *const i32,
+    info: *mut i32,
+);
+pub type SgeevIlp64FnPtr = unsafe extern "C" fn(
+    jobvl: *const c_char,
+    jobvr: *const c_char,
+    n: *const i64,
+    A: *mut f32,
+    lda: *const i64,
+    WR: *mut f32,
+    WI: *mut f32,
+    VL: *mut f32,
+    ldvl: *const i64,
+    VR: *mut f32,
+    ldvr: *const i64,
+    work: *mut f32,
+    lwork: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(sgeev, SgeevLp64FnPtr, SgeevIlp64FnPtr);
+
+pub type SgeqrfLp64FnPtr = unsafe extern "C" fn(
+    m: *const i32,
+    n: *const i32,
+    A: *mut f32,
+    lda: *const i32,
+    tau: *mut f32,
+    work: *mut f32,
+    lwork: *const i32,
+    info: *mut i32,
+);
+pub type SgeqrfIlp64FnPtr = unsafe extern "C" fn(
+    m: *const i64,
+    n: *const i64,
+    A: *mut f32,
+    lda: *const i64,
+    tau: *mut f32,
+    work: *mut f32,
+    lwork: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(sgeqrf, SgeqrfLp64FnPtr, SgeqrfIlp64FnPtr);
 
 pub type Sgesc2Lp64FnPtr = unsafe extern "C" fn(
     n: *const i32,
@@ -526,6 +820,30 @@ pub type SgetrsIlp64FnPtr = unsafe extern "C" fn(
 );
 define_dual_backend!(sgetrs, SgetrsLp64FnPtr, SgetrsIlp64FnPtr);
 
+pub type SorgqrLp64FnPtr = unsafe extern "C" fn(
+    m: *const i32,
+    n: *const i32,
+    k: *const i32,
+    A: *mut f32,
+    lda: *const i32,
+    tau: *const f32,
+    work: *mut f32,
+    lwork: *const i32,
+    info: *mut i32,
+);
+pub type SorgqrIlp64FnPtr = unsafe extern "C" fn(
+    m: *const i64,
+    n: *const i64,
+    k: *const i64,
+    A: *mut f32,
+    lda: *const i64,
+    tau: *const f32,
+    work: *mut f32,
+    lwork: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(sorgqr, SorgqrLp64FnPtr, SorgqrIlp64FnPtr);
+
 pub type SpotrfLp64FnPtr = unsafe extern "C" fn(
     uplo: *const c_char,
     n: *const i32,
@@ -565,6 +883,88 @@ pub type SsyevIlp64FnPtr = unsafe extern "C" fn(
     info: *mut i64,
 );
 define_dual_backend!(ssyev, SsyevLp64FnPtr, SsyevIlp64FnPtr);
+
+pub type StrtrsLp64FnPtr = unsafe extern "C" fn(
+    uplo: *const c_char,
+    trans: *const c_char,
+    diag: *const c_char,
+    n: *const i32,
+    nrhs: *const i32,
+    A: *const f32,
+    lda: *const i32,
+    B: *mut f32,
+    ldb: *const i32,
+    info: *mut i32,
+);
+pub type StrtrsIlp64FnPtr = unsafe extern "C" fn(
+    uplo: *const c_char,
+    trans: *const c_char,
+    diag: *const c_char,
+    n: *const i64,
+    nrhs: *const i64,
+    A: *const f32,
+    lda: *const i64,
+    B: *mut f32,
+    ldb: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(strtrs, StrtrsLp64FnPtr, StrtrsIlp64FnPtr);
+
+pub type ZgeevLp64FnPtr = unsafe extern "C" fn(
+    jobvl: *const c_char,
+    jobvr: *const c_char,
+    n: *const i32,
+    A: *mut num_complex::Complex64,
+    lda: *const i32,
+    W: *mut num_complex::Complex64,
+    VL: *mut num_complex::Complex64,
+    ldvl: *const i32,
+    VR: *mut num_complex::Complex64,
+    ldvr: *const i32,
+    work: *mut num_complex::Complex64,
+    lwork: *const i32,
+    rwork: *mut f64,
+    info: *mut i32,
+);
+pub type ZgeevIlp64FnPtr = unsafe extern "C" fn(
+    jobvl: *const c_char,
+    jobvr: *const c_char,
+    n: *const i64,
+    A: *mut num_complex::Complex64,
+    lda: *const i64,
+    W: *mut num_complex::Complex64,
+    VL: *mut num_complex::Complex64,
+    ldvl: *const i64,
+    VR: *mut num_complex::Complex64,
+    ldvr: *const i64,
+    work: *mut num_complex::Complex64,
+    lwork: *const i64,
+    rwork: *mut f64,
+    info: *mut i64,
+);
+define_dual_backend!(zgeev, ZgeevLp64FnPtr, ZgeevIlp64FnPtr);
+
+pub type ZgeqrfLp64FnPtr = unsafe extern "C" fn(
+    m: *const i32,
+    n: *const i32,
+    A: *mut num_complex::Complex64,
+    lda: *const i32,
+    tau: *mut num_complex::Complex64,
+    work: *mut num_complex::Complex64,
+    lwork: *const i32,
+    info: *mut i32,
+);
+pub type ZgeqrfIlp64FnPtr = unsafe extern "C" fn(
+    m: *const i64,
+    n: *const i64,
+    A: *mut num_complex::Complex64,
+    lda: *const i64,
+    tau: *mut num_complex::Complex64,
+    work: *mut num_complex::Complex64,
+    lwork: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(zgeqrf, ZgeqrfLp64FnPtr, ZgeqrfIlp64FnPtr);
 
 pub type Zgesc2Lp64FnPtr = unsafe extern "C" fn(
     n: *const i32,
@@ -724,6 +1124,32 @@ pub type ZgetrsIlp64FnPtr = unsafe extern "C" fn(
 );
 define_dual_backend!(zgetrs, ZgetrsLp64FnPtr, ZgetrsIlp64FnPtr);
 
+pub type ZheevLp64FnPtr = unsafe extern "C" fn(
+    jobz: *const c_char,
+    uplo: *const c_char,
+    n: *const i32,
+    A: *mut num_complex::Complex64,
+    lda: *const i32,
+    W: *mut f64,
+    work: *mut num_complex::Complex64,
+    lwork: *const i32,
+    rwork: *mut f64,
+    info: *mut i32,
+);
+pub type ZheevIlp64FnPtr = unsafe extern "C" fn(
+    jobz: *const c_char,
+    uplo: *const c_char,
+    n: *const i64,
+    A: *mut num_complex::Complex64,
+    lda: *const i64,
+    W: *mut f64,
+    work: *mut num_complex::Complex64,
+    lwork: *const i64,
+    rwork: *mut f64,
+    info: *mut i64,
+);
+define_dual_backend!(zheev, ZheevLp64FnPtr, ZheevIlp64FnPtr);
+
 pub type ZpotrfLp64FnPtr = unsafe extern "C" fn(
     uplo: *const c_char,
     n: *const i32,
@@ -739,3 +1165,53 @@ pub type ZpotrfIlp64FnPtr = unsafe extern "C" fn(
     info: *mut i64,
 );
 define_dual_backend!(zpotrf, ZpotrfLp64FnPtr, ZpotrfIlp64FnPtr);
+
+pub type ZtrtrsLp64FnPtr = unsafe extern "C" fn(
+    uplo: *const c_char,
+    trans: *const c_char,
+    diag: *const c_char,
+    n: *const i32,
+    nrhs: *const i32,
+    A: *const num_complex::Complex64,
+    lda: *const i32,
+    B: *mut num_complex::Complex64,
+    ldb: *const i32,
+    info: *mut i32,
+);
+pub type ZtrtrsIlp64FnPtr = unsafe extern "C" fn(
+    uplo: *const c_char,
+    trans: *const c_char,
+    diag: *const c_char,
+    n: *const i64,
+    nrhs: *const i64,
+    A: *const num_complex::Complex64,
+    lda: *const i64,
+    B: *mut num_complex::Complex64,
+    ldb: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(ztrtrs, ZtrtrsLp64FnPtr, ZtrtrsIlp64FnPtr);
+
+pub type ZungqrLp64FnPtr = unsafe extern "C" fn(
+    m: *const i32,
+    n: *const i32,
+    k: *const i32,
+    A: *mut num_complex::Complex64,
+    lda: *const i32,
+    tau: *const num_complex::Complex64,
+    work: *mut num_complex::Complex64,
+    lwork: *const i32,
+    info: *mut i32,
+);
+pub type ZungqrIlp64FnPtr = unsafe extern "C" fn(
+    m: *const i64,
+    n: *const i64,
+    k: *const i64,
+    A: *mut num_complex::Complex64,
+    lda: *const i64,
+    tau: *const num_complex::Complex64,
+    work: *mut num_complex::Complex64,
+    lwork: *const i64,
+    info: *mut i64,
+);
+define_dual_backend!(zungqr, ZungqrLp64FnPtr, ZungqrIlp64FnPtr);
