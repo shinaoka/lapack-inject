@@ -28,6 +28,12 @@ CORE_FUNCTIONS = {
     "spotrf_", "dpotrf_", "cpotrf_", "zpotrf_",
     "ssyev_", "dsyev_",
     "sgesvd_", "dgesvd_", "cgesvd_", "zgesvd_",
+    "sgeqrf_", "dgeqrf_", "cgeqrf_", "zgeqrf_",
+    "sorgqr_", "dorgqr_",
+    "cungqr_", "zungqr_",
+    "strtrs_", "dtrtrs_", "ctrtrs_", "ztrtrs_",
+    "sgeev_", "dgeev_", "cgeev_", "zgeev_",
+    "cheev_", "zheev_",
     "sgetc2_", "dgetc2_", "cgetc2_", "zgetc2_",
     "sgesc2_", "dgesc2_", "cgesc2_", "zgesc2_",
 }
@@ -102,6 +108,91 @@ SUPPLEMENTAL_FUNCTIONS = [
         Param("info", "*mut c_int"),
     ]),
 ]
+
+# Metadata: which *mut/*const c_int params are integer arrays (not scalars).
+# Maps function name -> {param_name: size_expression}
+# size_expression uses other parameter names from the function signature.
+ARRAY_INT_PARAMS = {
+    "sgesv_": {"ipiv": "n"},
+    "dgesv_": {"ipiv": "n"},
+    "cgesv_": {"ipiv": "n"},
+    "zgesv_": {"ipiv": "n"},
+    "sgetrf_": {"ipiv": "min(m,n)"},
+    "dgetrf_": {"ipiv": "min(m,n)"},
+    "cgetrf_": {"ipiv": "min(m,n)"},
+    "zgetrf_": {"ipiv": "min(m,n)"},
+    "sgetrs_": {"ipiv": "n"},
+    "dgetrs_": {"ipiv": "n"},
+    "cgetrs_": {"ipiv": "n"},
+    "zgetrs_": {"ipiv": "n"},
+    "sgetri_": {"ipiv": "n"},
+    "dgetri_": {"ipiv": "n"},
+    "cgetri_": {"ipiv": "n"},
+    "zgetri_": {"ipiv": "n"},
+    "sgetc2_": {"ipiv": "n", "jpiv": "n"},
+    "dgetc2_": {"ipiv": "n", "jpiv": "n"},
+    "cgetc2_": {"ipiv": "n", "jpiv": "n"},
+    "zgetc2_": {"ipiv": "n", "jpiv": "n"},
+    "sgesc2_": {"ipiv": "n", "jpiv": "n"},
+    "dgesc2_": {"ipiv": "n", "jpiv": "n"},
+    "cgesc2_": {"ipiv": "n", "jpiv": "n"},
+    "zgesc2_": {"ipiv": "n", "jpiv": "n"},
+}
+
+
+def _array_size_expr(size_expr: str, suffix: str) -> str:
+    """Convert a size expression template to a Rust expression.
+
+    'n'         -> 'n_lp64 as usize'
+    'min(m,n)'  -> 'std::cmp::min(m_lp64, n_lp64) as usize'
+    """
+    def repl(m):
+        w = m.group(1)
+        if w == 'min':
+            return 'std::cmp::min'
+        return f'{w}_{suffix}'
+    result = re.sub(r'([a-zA-Z_]\w*)', repl, size_expr)
+    return result + ' as usize'
+
+
+def _array_param_arm(lines, writeback, p, size_expr, suffix, width, is_mut):
+    """Generate bridging code for one array param in one dispatch arm.
+
+    When consumer width matches provider width, pass the original pointer.
+    When widths differ (cross-width), allocate a Vec, copy elements,
+    pass the Vec pointer, and for *mut write back element-by-element.
+
+    suffix: 'lp64' or 'ilp64'
+    width: 'i32' or 'i64' (the provider's expected integer width)
+    """
+    vec_name = f"{p.name}_{suffix}_vec"
+    is_lp64_arm = suffix == 'lp64'
+    # In the LP64 arm, widths match in the default build (not ilp64).
+    # In the ILP64 arm, widths match in the ilp64 build.
+    cfg_match = 'cfg(not(feature = "ilp64"))' if is_lp64_arm else 'cfg(feature = "ilp64")'
+    cfg_cross = 'cfg(feature = "ilp64")' if is_lp64_arm else 'cfg(not(feature = "ilp64"))'
+
+    # Pass original pointer when consumer width matches provider width
+    lines.append(f"            #[{cfg_match}]")
+    lines.append(f"            let {vec_name}_ptr = {p.name};")
+    # Cross-width bridging
+    size_rust = _array_size_expr(size_expr, suffix)
+    lines.append(f"            #[{cfg_cross}]")
+    lines.append(f"            let n_{p.name}_{suffix} = {size_rust};")
+    lines.append(f"            #[{cfg_cross}]")
+    if is_mut:
+        lines.append(f"            let mut {vec_name}: Vec<{width}> = vec![0{width}; n_{p.name}_{suffix}];")
+        lines.append(f"            #[{cfg_cross}]")
+        lines.append(f"            let {vec_name}_ptr = {vec_name}.as_mut_ptr();")
+        writeback.append(f"            #[{cfg_cross}]")
+        writeback.append(f"            for i in 0..n_{p.name}_{suffix} {{ *{p.name}.add(i) = {vec_name}[i] as lapackint; }}")
+    else:
+        lines.append(f"            let {vec_name}: Vec<{width}> = (0..n_{p.name}_{suffix}).map(|i| *{p.name}.add(i) as {width}).collect();")
+        lines.append(f"            #[{cfg_cross}]")
+        lines.append(f"            let {vec_name}_ptr = {vec_name}.as_ptr();")
+
+    return f"{vec_name}_ptr"
+
 
 def parse_lapack_rs(path: Path) -> List[Function]:
     """Parse lapack.rs and extract function signatures."""
@@ -229,6 +320,7 @@ def generate_fortran_export(func: Function) -> str:
     name = func.name.rstrip('_')
     prefix = get_type_name_prefix(func.name)
     provider_name = f"{prefix}Provider"
+    array_params = ARRAY_INT_PARAMS.get(func.name, {})
 
     params = []
     for p in func.params:
@@ -239,30 +331,54 @@ def generate_fortran_export(func: Function) -> str:
     lp64_params = []
     ilp64_lines = []
     ilp64_params = []
+    lp64_writeback = []
+    ilp64_writeback = []
     for p in func.params:
-        if p.type_.startswith('*const c_int'):
+        is_array = p.name in array_params
+        if p.type_.startswith('*const c_int') and is_array:
+            param_lp64 = _array_param_arm(lp64_lines, lp64_writeback, p, array_params[p.name], 'lp64', 'i32', is_mut=False)
+            param_ilp64 = _array_param_arm(ilp64_lines, ilp64_writeback, p, array_params[p.name], 'ilp64', 'i64', is_mut=False)
+            lp64_params.append(param_lp64)
+            ilp64_params.append(param_ilp64)
+        elif p.type_.startswith('*mut c_int') and is_array:
+            param_lp64 = _array_param_arm(lp64_lines, lp64_writeback, p, array_params[p.name], 'lp64', 'i32', is_mut=True)
+            param_ilp64 = _array_param_arm(ilp64_lines, ilp64_writeback, p, array_params[p.name], 'ilp64', 'i64', is_mut=True)
+            lp64_params.append(param_lp64)
+            ilp64_params.append(param_ilp64)
+        elif p.type_.startswith('*const c_int'):
             lp64_name = f"{p.name}_lp64"
             ilp64_name = f"{p.name}_ilp64"
-            lp64_lines.append(f"            let {lp64_name}: *const i32 = {p.name} as *const i32;")
-            ilp64_lines.append(f"            let {ilp64_name}: *const i64 = {p.name} as *const i64;")
-            lp64_params.append(lp64_name)
-            ilp64_params.append(ilp64_name)
+            lp64_lines.append(f"            let {lp64_name}: i32 = *{p.name} as i32;")
+            ilp64_lines.append(f"            let {ilp64_name}: i64 = *{p.name} as i64;")
+            lp64_params.append(f"&{lp64_name}")
+            ilp64_params.append(f"&{ilp64_name}")
         elif p.type_.startswith('*mut c_int'):
             lp64_name = f"{p.name}_lp64"
             ilp64_name = f"{p.name}_ilp64"
-            lp64_lines.append(f"            let {lp64_name}: *mut i32 = {p.name} as *mut i32;")
-            ilp64_lines.append(f"            let {ilp64_name}: *mut i64 = {p.name} as *mut i64;")
-            lp64_params.append(lp64_name)
-            ilp64_params.append(ilp64_name)
+            lp64_lines.append(f"            let mut {lp64_name}: i32 = *{p.name} as i32;")
+            ilp64_lines.append(f"            let mut {ilp64_name}: i64 = *{p.name} as i64;")
+            lp64_params.append(f"&mut {lp64_name}")
+            ilp64_params.append(f"&mut {ilp64_name}")
+            lp64_writeback.append(f"            *{p.name} = {lp64_name} as lapackint;")
+            ilp64_writeback.append(f"            *{p.name} = {ilp64_name} as lapackint;")
         else:
             lp64_params.append(p.name)
             ilp64_params.append(p.name)
 
-    params_str = ',\n'.join(params)
-    lp64_calls_str = ', '.join(lp64_params)
-    ilp64_calls_str = ', '.join(ilp64_params)
+    lp64_wb_str = '\n'.join(lp64_writeback)
+    ilp64_wb_str = '\n'.join(ilp64_writeback)
     lp64_lines_str = '\n'.join(lp64_lines)
     ilp64_lines_str = '\n'.join(ilp64_lines)
+    lp64_calls_str = ', '.join(lp64_params)
+    ilp64_calls_str = ', '.join(ilp64_params)
+    params_str = ',\n'.join(params)
+
+    has_lp64_wb = bool(lp64_writeback)
+    has_ilp64_wb = bool(ilp64_writeback)
+    lp64_call_block = f"""            fun({lp64_calls_str})""" + (f""";
+{lp64_wb_str}""" if has_lp64_wb else "")
+    ilp64_call_block = f"""            fun({ilp64_calls_str})""" + (f""";
+{ilp64_wb_str}""" if has_ilp64_wb else "")
 
     return f"""#[no_mangle]
 pub unsafe extern "C" fn {func.name}(
@@ -275,11 +391,11 @@ pub unsafe extern "C" fn {func.name}(
     match provider {{
         {provider_name}::Lp64(fun) => {{
 {lp64_lines_str}
-            fun({lp64_calls_str})
+{lp64_call_block}
         }}
         {provider_name}::Ilp64(fun) => {{
 {ilp64_lines_str}
-            fun({ilp64_calls_str})
+{ilp64_call_block}
         }}
     }}
 }}"""

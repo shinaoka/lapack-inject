@@ -50,8 +50,12 @@ registered.
 
 The generated Fortran surface supports:
 
-- `xGESV`, `xGETRF`, `xGETRS`, `xGETRI`, `xPOTRF`, and `xGESVD`
-- `sSYEV` and `dSYEV`
+- `xGESV`, `xGETRF`, `xGETRS`, `xGETRI`, `xPOTRF`
+- `xGESVD`
+- `xGEQRF`, real `xORGQR`, complex `xUNGQR`
+- `xTRTRS`
+- `s/dSYEV`, `c/zHEEV`
+- `xGEEV`
 - Supplemental complete-pivoting LU routines `xGETC2` and `xGESC2`
 
 The LAPACKE surface currently covers the double-precision routines listed
@@ -64,6 +68,11 @@ above in the Usage section.
   symbol name for LP64 and ILP64 callers. The LAPACKE C API exposes `_64`
   functions separately, so those C entry points do not require this feature to
   select 64-bit integer arguments.
+
+The default build keeps the consumer-facing Fortran symbols LP64-compatible.
+Register ILP64 host providers with the `_ilp64` registration functions; do not
+enable the `ilp64` feature just because the host provider is ILP64. The feature
+changes the consumer ABI too.
 
 ## License
 

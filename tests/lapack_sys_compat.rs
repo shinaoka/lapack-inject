@@ -8,6 +8,28 @@ extern crate lapack_inject;
 
 // Now lapack-sys functions should resolve to lapack-inject's exports
 use lapack_sys;
+use libloading::Library;
+
+fn load_built_lapack_inject() -> Library {
+    let profile = if cfg!(debug_assertions) {
+        "debug"
+    } else {
+        "release"
+    };
+    let lib_name = if cfg!(target_os = "macos") {
+        "liblapack_inject.dylib"
+    } else if cfg!(target_os = "windows") {
+        "lapack_inject.dll"
+    } else {
+        "liblapack_inject.so"
+    };
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("target")
+        .join(profile)
+        .join(lib_name);
+    unsafe { Library::new(&path) }
+        .unwrap_or_else(|err| panic!("failed to load {}: {err}", path.display()))
+}
 
 /// Test that we can take the address of lapack-sys functions
 /// (they resolve to lapack-inject's symbols)
@@ -79,4 +101,36 @@ fn symbols_are_linkable() {
     let _ = lapack_sys::zgels_ as *const ();
 
     println!("All tested symbols are linkable!");
+}
+
+#[test]
+fn tenferro_lapack_symbols_are_exported_by_cdylib() {
+    let lib = load_built_lapack_inject();
+    for symbol in [
+        b"dgesvd_\0".as_slice(),
+        b"zgesvd_\0".as_slice(),
+        b"dgeqrf_\0".as_slice(),
+        b"zgeqrf_\0".as_slice(),
+        b"dorgqr_\0".as_slice(),
+        b"zungqr_\0".as_slice(),
+        b"dtrtrs_\0".as_slice(),
+        b"ztrtrs_\0".as_slice(),
+        b"dpotrf_\0".as_slice(),
+        b"zpotrf_\0".as_slice(),
+        b"dgetrf_\0".as_slice(),
+        b"zgetrf_\0".as_slice(),
+        b"dsyev_\0".as_slice(),
+        b"zheev_\0".as_slice(),
+        b"dgeev_\0".as_slice(),
+        b"zgeev_\0".as_slice(),
+        b"dgetc2_\0".as_slice(),
+        b"dgesc2_\0".as_slice(),
+        b"zgetc2_\0".as_slice(),
+        b"zgesc2_\0".as_slice(),
+    ] {
+        unsafe {
+            lib.get::<*const ()>(symbol)
+                .unwrap_or_else(|err| panic!("missing {}: {err}", String::from_utf8_lossy(symbol)));
+        }
+    }
 }
