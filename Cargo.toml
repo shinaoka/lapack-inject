@@ -25,3 +25,9 @@ libloading = "0.8"
 [features]
 default = []
 ilp64 = []
+
+[profile.dev]
+debug = 0
+
+[profile.test]
+debug = 0
