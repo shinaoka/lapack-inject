@@ -460,3 +460,363 @@ fn lp64_dgesc2_symbol_bridges_ipiv_jpiv_arrays_to_ilp64_provider() {
     assert_eq!(rhs[0], 1.0);
     assert_eq!(scale, 1.0);
 }
+
+#[cfg(not(feature = "ilp64"))]
+unsafe extern "C" fn fake_dgeqp3_ilp64(
+    m: *const i64,
+    n: *const i64,
+    _a: *mut f64,
+    lda: *const i64,
+    jpvt: *mut i64,
+    _tau: *mut f64,
+    work: *mut f64,
+    lwork: *const i64,
+    info: *mut i64,
+) {
+    assert_eq!(read_unaligned(m), 2);
+    assert_eq!(read_unaligned(n), 3);
+    assert_eq!(read_unaligned(lda), 2);
+    assert_eq!(read_unaligned(lwork), 8);
+    // JPVT is read on input as zero/nonzero flags (nonzero fixes a leading column).
+    let jpvt = std::slice::from_raw_parts_mut(jpvt, 3);
+    assert_eq!(jpvt, &[0, 1, 0]);
+    jpvt.copy_from_slice(&[3, 1, 2]);
+    *work = 8.0;
+    write_unaligned(info, 0);
+}
+
+#[cfg(not(feature = "ilp64"))]
+#[test]
+fn lp64_dgeqp3_symbol_bridges_jpvt_both_ways_to_ilp64_provider() {
+    unsafe {
+        assert!(matches!(register_dgeqp3_ilp64(fake_dgeqp3_ilp64), 0 | 2));
+    }
+    let (m, n, lda, lwork) = (2_i32, 3_i32, 2_i32, 8_i32);
+    let mut a = [0.0_f64; 6];
+    let mut jpvt = [0_i32, 2, 0];
+    let mut tau = [0.0_f64; 2];
+    let mut work = [0.0_f64; 8];
+    let mut info = -1_i32;
+    unsafe {
+        lapack_sys::dgeqp3_(
+            &m,
+            &n,
+            a.as_mut_ptr(),
+            &lda,
+            jpvt.as_mut_ptr(),
+            tau.as_mut_ptr(),
+            work.as_mut_ptr(),
+            &lwork,
+            &mut info,
+        );
+    }
+    assert_eq!(info, 0);
+    assert_eq!(jpvt, [3, 1, 2]);
+    assert_eq!(work[0], 8.0);
+}
+
+#[cfg(not(feature = "ilp64"))]
+unsafe extern "C" fn fake_dsyevd_ilp64(
+    jobz: *const c_char,
+    uplo: *const c_char,
+    n: *const i64,
+    _a: *mut f64,
+    lda: *const i64,
+    _w: *mut f64,
+    work: *mut f64,
+    lwork: *const i64,
+    iwork: *mut i64,
+    liwork: *const i64,
+    info: *mut i64,
+) {
+    assert_eq!(*jobz as u8, b'V');
+    assert_eq!(*uplo as u8, b'L');
+    assert_eq!(read_unaligned(n), 2);
+    assert_eq!(read_unaligned(lda), 2);
+    if read_unaligned(liwork) == -1 {
+        // Workspace query: the optimal sizes come back in work[0] and iwork[0].
+        assert_eq!(read_unaligned(lwork), -1);
+        *work = 9.0;
+        write_unaligned(iwork, 13);
+    } else {
+        assert_eq!(read_unaligned(liwork), 3);
+        std::slice::from_raw_parts_mut(iwork, 3).copy_from_slice(&[7, 8, 9]);
+    }
+    write_unaligned(info, 0);
+}
+
+#[cfg(not(feature = "ilp64"))]
+#[test]
+fn lp64_dsyevd_symbol_bridges_iwork_for_query_and_call() {
+    unsafe {
+        assert!(matches!(register_dsyevd_ilp64(fake_dsyevd_ilp64), 0 | 2));
+    }
+    let jobz = b'V' as c_char;
+    let uplo = b'L' as c_char;
+    let (n, lda) = (2_i32, 2_i32);
+    let mut a = [0.0_f64; 4];
+    let mut w = [0.0_f64; 2];
+    let mut info = -1_i32;
+
+    let mut work = [0.0_f64];
+    let mut iwork = [0_i32];
+    unsafe {
+        lapack_sys::dsyevd_(
+            &jobz,
+            &uplo,
+            &n,
+            a.as_mut_ptr(),
+            &lda,
+            w.as_mut_ptr(),
+            work.as_mut_ptr(),
+            &-1,
+            iwork.as_mut_ptr(),
+            &-1,
+            &mut info,
+        );
+    }
+    assert_eq!(info, 0);
+    assert_eq!((work[0], iwork[0]), (9.0, 13));
+
+    let mut work = [0.0_f64; 9];
+    let mut iwork = [0_i32; 3];
+    info = -1;
+    unsafe {
+        lapack_sys::dsyevd_(
+            &jobz,
+            &uplo,
+            &n,
+            a.as_mut_ptr(),
+            &lda,
+            w.as_mut_ptr(),
+            work.as_mut_ptr(),
+            &9,
+            iwork.as_mut_ptr(),
+            &3,
+            &mut info,
+        );
+    }
+    assert_eq!(info, 0);
+    assert_eq!(iwork, [7, 8, 9]);
+}
+
+#[cfg(not(feature = "ilp64"))]
+unsafe extern "C" fn fake_zunmqr_ilp64(
+    side: *const c_char,
+    trans: *const c_char,
+    m: *const i64,
+    n: *const i64,
+    k: *const i64,
+    _a: *const Complex64,
+    lda: *const i64,
+    _tau: *const Complex64,
+    c: *mut Complex64,
+    ldc: *const i64,
+    _work: *mut Complex64,
+    lwork: *const i64,
+    info: *mut i64,
+) {
+    assert_eq!(*side as u8, b'L');
+    assert_eq!(*trans as u8, b'C');
+    assert_eq!(
+        [m, n, k, lda, ldc, lwork].map(|p| read_unaligned(p)),
+        [3, 1, 2, 3, 3, 4]
+    );
+    *c = Complex64::new(1.0, -1.0);
+    write_unaligned(info, 0);
+}
+
+#[cfg(not(feature = "ilp64"))]
+#[test]
+fn lp64_zunmqr_symbol_dispatches_to_ilp64_provider() {
+    unsafe {
+        assert!(matches!(register_zunmqr_ilp64(fake_zunmqr_ilp64), 0 | 2));
+    }
+    let side = b'L' as c_char;
+    let trans = b'C' as c_char;
+    let a = [Complex64::new(0.0, 0.0); 6];
+    let tau = [Complex64::new(0.0, 0.0); 2];
+    let mut c = [Complex64::new(0.0, 0.0); 3];
+    let mut work = [Complex64::new(0.0, 0.0); 4];
+    let mut info = -1_i32;
+    unsafe {
+        lapack_sys::zunmqr_(
+            &side,
+            &trans,
+            &3,
+            &1,
+            &2,
+            a.as_ptr().cast(),
+            &3,
+            tau.as_ptr().cast(),
+            c.as_mut_ptr().cast(),
+            &3,
+            work.as_mut_ptr().cast(),
+            &4,
+            &mut info,
+        );
+    }
+    assert_eq!(info, 0);
+    assert_eq!(c[0], Complex64::new(1.0, -1.0));
+}
+
+// ILP64 consumer -> LP64 provider: the narrowing direction of the integer-array bridges.
+
+#[cfg(feature = "ilp64")]
+mod ilp64_consumer {
+    use core::ptr::read_unaligned;
+    use lapack_inject::*;
+    use std::ffi::c_char;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    // With `ilp64`, lapack-inject exports the Fortran symbols with 64-bit integers.
+    extern "C" {
+        fn dgeqp3_(
+            m: *const i64,
+            n: *const i64,
+            a: *mut f64,
+            lda: *const i64,
+            jpvt: *mut i64,
+            tau: *mut f64,
+            work: *mut f64,
+            lwork: *const i64,
+            info: *mut i64,
+        );
+        fn dsyevd_(
+            jobz: *const c_char,
+            uplo: *const c_char,
+            n: *const i64,
+            a: *mut f64,
+            lda: *const i64,
+            w: *mut f64,
+            work: *mut f64,
+            lwork: *const i64,
+            iwork: *mut i64,
+            liwork: *const i64,
+            info: *mut i64,
+        );
+    }
+
+    static GEQP3_QUERY_SEEN: AtomicBool = AtomicBool::new(false);
+
+    unsafe extern "C" fn fake_dgeqp3_lp64(
+        _m: *const i32,
+        n: *const i32,
+        _a: *mut f64,
+        _lda: *const i32,
+        jpvt: *mut i32,
+        _tau: *mut f64,
+        work: *mut f64,
+        lwork: *const i32,
+        info: *mut i32,
+    ) {
+        if read_unaligned(lwork) == -1 {
+            // LAPACK does not touch JPVT in a workspace query; neither may the bridge.
+            GEQP3_QUERY_SEEN.store(true, Ordering::SeqCst);
+            *work = 4.0;
+        } else {
+            assert_eq!(read_unaligned(n), 2);
+            let jpvt = std::slice::from_raw_parts_mut(jpvt, 2);
+            // 1 << 32 must stay a nonzero (fixed-column) flag after narrowing.
+            assert_eq!(jpvt, &[1, 0]);
+            jpvt.copy_from_slice(&[1, 2]);
+        }
+        *info = 0;
+    }
+
+    #[test]
+    fn dgeqp3_narrows_jpvt_flags_and_skips_jpvt_on_query() {
+        unsafe {
+            assert!(matches!(register_dgeqp3_lp64(fake_dgeqp3_lp64), 0 | 2));
+        }
+        let (m, n, lda) = (2_i64, 2_i64, 2_i64);
+        let mut a = [0.0_f64; 4];
+        let mut tau = [0.0_f64; 2];
+        let mut work = [0.0_f64; 4];
+        let mut info = -1_i64;
+
+        // The query passes a JPVT the bridge must not read or write.
+        let mut sentinel = [i64::MIN; 2];
+        unsafe {
+            dgeqp3_(
+                &m,
+                &n,
+                a.as_mut_ptr(),
+                &lda,
+                sentinel.as_mut_ptr(),
+                tau.as_mut_ptr(),
+                work.as_mut_ptr(),
+                &-1,
+                &mut info,
+            );
+        }
+        assert!(GEQP3_QUERY_SEEN.load(Ordering::SeqCst));
+        assert_eq!((info, work[0], sentinel), (0, 4.0, [i64::MIN; 2]));
+
+        let mut jpvt = [1_i64 << 32, 0];
+        info = -1;
+        unsafe {
+            dgeqp3_(
+                &m,
+                &n,
+                a.as_mut_ptr(),
+                &lda,
+                jpvt.as_mut_ptr(),
+                tau.as_mut_ptr(),
+                work.as_mut_ptr(),
+                &4,
+                &mut info,
+            );
+        }
+        assert_eq!((info, jpvt), (0, [1, 2]));
+    }
+
+    unsafe extern "C" fn fake_dsyevd_lp64(
+        _jobz: *const c_char,
+        _uplo: *const c_char,
+        _n: *const i32,
+        _a: *mut f64,
+        _lda: *const i32,
+        _w: *mut f64,
+        work: *mut f64,
+        _lwork: *const i32,
+        iwork: *mut i32,
+        liwork: *const i32,
+        info: *mut i32,
+    ) {
+        assert_eq!(read_unaligned(liwork), -1);
+        *work = 9.0;
+        *iwork = 13;
+        *info = 0;
+    }
+
+    #[test]
+    fn dsyevd_query_returns_liwork_through_the_narrowing_bridge() {
+        unsafe {
+            assert!(matches!(register_dsyevd_lp64(fake_dsyevd_lp64), 0 | 2));
+        }
+        let jobz = b'V' as c_char;
+        let uplo = b'L' as c_char;
+        let mut a = [0.0_f64; 4];
+        let mut w = [0.0_f64; 2];
+        let mut work = [0.0_f64];
+        let mut iwork = [0_i64];
+        let mut info = -1_i64;
+        unsafe {
+            dsyevd_(
+                &jobz,
+                &uplo,
+                &2,
+                a.as_mut_ptr(),
+                &2,
+                w.as_mut_ptr(),
+                work.as_mut_ptr(),
+                &-1,
+                iwork.as_mut_ptr(),
+                &-1,
+                &mut info,
+            );
+        }
+        assert_eq!((info, work[0], iwork[0]), (0, 9.0, 13));
+    }
+}

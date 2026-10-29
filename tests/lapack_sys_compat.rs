@@ -127,6 +127,16 @@ fn tenferro_lapack_symbols_are_exported_by_cdylib() {
         b"dgesc2_\0".as_slice(),
         b"zgetc2_\0".as_slice(),
         b"zgesc2_\0".as_slice(),
+        b"sgeqp3_\0".as_slice(),
+        b"dgeqp3_\0".as_slice(),
+        b"cgeqp3_\0".as_slice(),
+        b"zgeqp3_\0".as_slice(),
+        b"sormqr_\0".as_slice(),
+        b"dormqr_\0".as_slice(),
+        b"cunmqr_\0".as_slice(),
+        b"zunmqr_\0".as_slice(),
+        b"ssyevd_\0".as_slice(),
+        b"dsyevd_\0".as_slice(),
     ] {
         unsafe {
             lib.get::<*const ()>(symbol)

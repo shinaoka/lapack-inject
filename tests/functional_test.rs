@@ -414,3 +414,167 @@ fn test_dgesvd() {
 
     println!("DGESVD test passed!");
 }
+
+/// Loads `name` from the system LAPACK, an LP64 library, and registers it as the LP64
+/// provider. The calls below pass `i32` arguments, so these tests need the default
+/// (LP64) consumer ABI.
+#[cfg(not(feature = "ilp64"))]
+macro_rules! register_lp64 {
+    ($lib:expr, $name:literal, $register:ident, $ty:ty) => {{
+        let symbol: Option<libloading::Symbol<$ty>> = unsafe { $lib.get($name).ok() };
+        match symbol {
+            Some(symbol) => {
+                assert!(matches!(unsafe { $register(*symbol) }, 0 | 2));
+                true
+            }
+            None => false,
+        }
+    }};
+}
+
+#[cfg(not(feature = "ilp64"))]
+#[test]
+#[ignore]
+fn test_dgeqp3_dormqr() {
+    let Some(lib) = get_lapack_library() else {
+        eprintln!("No LAPACK library found. Skipping test.");
+        return;
+    };
+    if !register_lp64!(lib, b"dgeqp3_", register_dgeqp3_lp64, Dgeqp3Lp64FnPtr)
+        || !register_lp64!(lib, b"dormqr_", register_dormqr_lp64, DormqrLp64FnPtr)
+    {
+        eprintln!("dgeqp3_/dormqr_ not found. Skipping.");
+        return;
+    }
+
+    // Column 1 has the largest norm, so column-pivoted QR picks it first.
+    let (m, n, lda) = (3_i32, 2_i32, 3_i32);
+    let original = [1.0_f64, 0.0, 0.0, 0.0, 3.0, 4.0];
+    let mut a = original;
+    let mut jpvt = [0_i32; 2];
+    let mut tau = [0.0_f64; 2];
+    let lwork = 64_i32;
+    let mut work = vec![0.0_f64; lwork as usize];
+    let mut info = -1_i32;
+    unsafe {
+        lapack_sys::dgeqp3_(
+            &m,
+            &n,
+            a.as_mut_ptr(),
+            &lda,
+            jpvt.as_mut_ptr(),
+            tau.as_mut_ptr(),
+            work.as_mut_ptr(),
+            &lwork,
+            &mut info,
+        );
+    }
+    assert_eq!(info, 0, "DGEQP3 should succeed");
+    assert_eq!(jpvt, [2, 1]);
+    assert!(
+        (a[0].abs() - 5.0).abs() < 1e-12,
+        "|R11| should be 5, got {}",
+        a[0]
+    );
+
+    // Q * R reproduces the pivoted matrix A P: apply Q to [R; 0] with dormqr.
+    let mut c = [a[0], 0.0, 0.0, a[3], a[4], 0.0];
+    let side = b'L' as std::ffi::c_char;
+    let trans = b'N' as std::ffi::c_char;
+    info = -1;
+    unsafe {
+        lapack_sys::dormqr_(
+            &side,
+            &trans,
+            &m,
+            &n,
+            &n,
+            a.as_ptr(),
+            &lda,
+            tau.as_ptr(),
+            c.as_mut_ptr(),
+            &m,
+            work.as_mut_ptr(),
+            &lwork,
+            &mut info,
+        );
+    }
+    assert_eq!(info, 0, "DORMQR should succeed");
+    let pivoted = [
+        original[3],
+        original[4],
+        original[5],
+        original[0],
+        original[1],
+        original[2],
+    ];
+    for (got, want) in c.iter().zip(pivoted) {
+        assert!((got - want).abs() < 1e-12, "Q R = A P failed: {c:?}");
+    }
+}
+
+#[cfg(not(feature = "ilp64"))]
+#[test]
+#[ignore]
+fn test_dsyevd() {
+    let Some(lib) = get_lapack_library() else {
+        eprintln!("No LAPACK library found. Skipping test.");
+        return;
+    };
+    if !register_lp64!(lib, b"dsyevd_", register_dsyevd_lp64, DsyevdLp64FnPtr) {
+        eprintln!("dsyevd_ not found. Skipping.");
+        return;
+    }
+
+    let jobz = b'V' as std::ffi::c_char;
+    let uplo = b'U' as std::ffi::c_char;
+    let (n, lda) = (2_i32, 2_i32);
+    let mut a = [2.0_f64, 1.0, 1.0, 2.0];
+    let mut w = [0.0_f64; 2];
+    let mut work = [0.0_f64];
+    let mut iwork = [0_i32];
+    let mut info = -1_i32;
+    unsafe {
+        lapack_sys::dsyevd_(
+            &jobz,
+            &uplo,
+            &n,
+            a.as_mut_ptr(),
+            &lda,
+            w.as_mut_ptr(),
+            work.as_mut_ptr(),
+            &-1,
+            iwork.as_mut_ptr(),
+            &-1,
+            &mut info,
+        );
+    }
+    assert_eq!(info, 0, "DSYEVD query should succeed");
+    let lwork = work[0] as i32;
+    let liwork = iwork[0];
+    assert!(lwork >= 1 && liwork >= 1);
+
+    let mut work = vec![0.0_f64; lwork as usize];
+    let mut iwork = vec![0_i32; liwork as usize];
+    info = -1;
+    unsafe {
+        lapack_sys::dsyevd_(
+            &jobz,
+            &uplo,
+            &n,
+            a.as_mut_ptr(),
+            &lda,
+            w.as_mut_ptr(),
+            work.as_mut_ptr(),
+            &lwork,
+            iwork.as_mut_ptr(),
+            &liwork,
+            &mut info,
+        );
+    }
+    assert_eq!(info, 0, "DSYEVD should succeed");
+    assert!(
+        (w[0] - 1.0).abs() < 1e-12 && (w[1] - 3.0).abs() < 1e-12,
+        "eigenvalues {w:?}"
+    );
+}

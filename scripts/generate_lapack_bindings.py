@@ -36,6 +36,10 @@ CORE_FUNCTIONS = {
     "cheev_", "zheev_",
     "sgetc2_", "dgetc2_", "cgetc2_", "zgetc2_",
     "sgesc2_", "dgesc2_", "cgesc2_", "zgesc2_",
+    "sgeqp3_", "dgeqp3_", "cgeqp3_", "zgeqp3_",
+    "sormqr_", "dormqr_",
+    "cunmqr_", "zunmqr_",
+    "ssyevd_", "dsyevd_",
 }
 
 SUPPLEMENTAL_FUNCTIONS = [
@@ -137,6 +141,33 @@ ARRAY_INT_PARAMS = {
     "dgesc2_": {"ipiv": "n", "jpiv": "n"},
     "cgesc2_": {"ipiv": "n", "jpiv": "n"},
     "zgesc2_": {"ipiv": "n", "jpiv": "n"},
+    "sgeqp3_": {"JPVT": "n"},
+    "dgeqp3_": {"JPVT": "n"},
+    "cgeqp3_": {"JPVT": "n"},
+    "zgeqp3_": {"JPVT": "n"},
+    # A workspace query passes liwork = -1 and reads the optimal size from iwork[0].
+    "ssyevd_": {"iwork": "max(liwork,1)"},
+    "dsyevd_": {"iwork": "max(liwork,1)"},
+}
+
+# *mut integer arrays the routine reads on input as zero/nonzero flags (?geqp3's JPVT
+# fixes a leading column where nonzero). Cross-width bridging copies them in as 0/1, so
+# narrowing an ILP64 flag such as 1 << 32 cannot turn it into 0; other *mut arrays are
+# output only.
+INOUT_FLAG_ARRAY_INT_PARAMS = {
+    "sgeqp3_": {"JPVT"},
+    "dgeqp3_": {"JPVT"},
+    "cgeqp3_": {"JPVT"},
+    "zgeqp3_": {"JPVT"},
+}
+
+# Arrays a workspace query (the named parameter == -1) does not touch: LAPACK returns
+# before reading or writing them, so the bridge copies nothing in that case.
+QUERY_UNTOUCHED_ARRAY_INT_PARAMS = {
+    "sgeqp3_": {"JPVT": "lwork"},
+    "dgeqp3_": {"JPVT": "lwork"},
+    "cgeqp3_": {"JPVT": "lwork"},
+    "zgeqp3_": {"JPVT": "lwork"},
 }
 
 
@@ -145,17 +176,18 @@ def _array_size_expr(size_expr: str, suffix: str) -> str:
 
     'n'         -> 'n_lp64 as usize'
     'min(m,n)'  -> 'std::cmp::min(m_lp64, n_lp64) as usize'
+    'max(liwork,1)' -> 'std::cmp::max(liwork_lp64, 1) as usize'
     """
     def repl(m):
         w = m.group(1)
-        if w == 'min':
-            return 'std::cmp::min'
+        if w in ('min', 'max'):
+            return f'std::cmp::{w}'
         return f'{w}_{suffix}'
     result = re.sub(r'([a-zA-Z_]\w*)', repl, size_expr)
     return result + ' as usize'
 
 
-def _array_param_arm(lines, writeback, p, size_expr, suffix, width, is_mut):
+def _array_param_arm(lines, writeback, p, size_expr, suffix, width, is_mut, is_flag_in=False, query_param=None):
     """Generate bridging code for one array param in one dispatch arm.
 
     When consumer width matches provider width, pass the original pointer.
@@ -177,11 +209,16 @@ def _array_param_arm(lines, writeback, p, size_expr, suffix, width, is_mut):
     lines.append(f"            let {vec_name}_ptr = {p.name};")
     # Cross-width bridging
     size_rust = _array_size_expr(size_expr, suffix)
+    if query_param is not None:
+        size_rust = f"if {query_param}_{suffix} == -1 {{ 0 }} else {{ {size_rust} }}"
     lines.append(f"            #[{cfg_cross}]")
     lines.append(f"            let n_{p.name}_{suffix} = {size_rust};")
     lines.append(f"            #[{cfg_cross}]")
     if is_mut:
-        lines.append(f"            let mut {vec_name}: Vec<{width}> = vec![0{width}; n_{p.name}_{suffix}];")
+        if is_flag_in:
+            lines.append(f"            let mut {vec_name}: Vec<{width}> = (0..n_{p.name}_{suffix}).map(|i| (*{p.name}.add(i) != 0) as {width}).collect();")
+        else:
+            lines.append(f"            let mut {vec_name}: Vec<{width}> = vec![0{width}; n_{p.name}_{suffix}];")
         lines.append(f"            #[{cfg_cross}]")
         lines.append(f"            let {vec_name}_ptr = {vec_name}.as_mut_ptr();")
         writeback.append(f"            #[{cfg_cross}]")
@@ -321,6 +358,8 @@ def generate_fortran_export(func: Function) -> str:
     prefix = get_type_name_prefix(func.name)
     provider_name = f"{prefix}Provider"
     array_params = ARRAY_INT_PARAMS.get(func.name, {})
+    flag_in_params = INOUT_FLAG_ARRAY_INT_PARAMS.get(func.name, set())
+    query_untouched = QUERY_UNTOUCHED_ARRAY_INT_PARAMS.get(func.name, {})
 
     params = []
     for p in func.params:
@@ -333,18 +372,15 @@ def generate_fortran_export(func: Function) -> str:
     ilp64_params = []
     lp64_writeback = []
     ilp64_writeback = []
+    # Array sizes refer to converted scalars (iwork's size uses the later liwork), so
+    # scalar conversions are emitted first and array bridges after them.
+    deferred_arrays = []
     for p in func.params:
         is_array = p.name in array_params
-        if p.type_.startswith('*const c_int') and is_array:
-            param_lp64 = _array_param_arm(lp64_lines, lp64_writeback, p, array_params[p.name], 'lp64', 'i32', is_mut=False)
-            param_ilp64 = _array_param_arm(ilp64_lines, ilp64_writeback, p, array_params[p.name], 'ilp64', 'i64', is_mut=False)
-            lp64_params.append(param_lp64)
-            ilp64_params.append(param_ilp64)
-        elif p.type_.startswith('*mut c_int') and is_array:
-            param_lp64 = _array_param_arm(lp64_lines, lp64_writeback, p, array_params[p.name], 'lp64', 'i32', is_mut=True)
-            param_ilp64 = _array_param_arm(ilp64_lines, ilp64_writeback, p, array_params[p.name], 'ilp64', 'i64', is_mut=True)
-            lp64_params.append(param_lp64)
-            ilp64_params.append(param_ilp64)
+        if is_array:
+            deferred_arrays.append((p, len(lp64_params)))
+            lp64_params.append(None)
+            ilp64_params.append(None)
         elif p.type_.startswith('*const c_int'):
             lp64_name = f"{p.name}_lp64"
             ilp64_name = f"{p.name}_ilp64"
@@ -364,6 +400,14 @@ def generate_fortran_export(func: Function) -> str:
         else:
             lp64_params.append(p.name)
             ilp64_params.append(p.name)
+
+    for p, slot in deferred_arrays:
+        is_mut = p.type_.startswith('*mut c_int')
+        assert is_mut or p.type_.startswith('*const c_int'), p
+        is_flag_in = p.name in flag_in_params
+        query_param = query_untouched.get(p.name)
+        lp64_params[slot] = _array_param_arm(lp64_lines, lp64_writeback, p, array_params[p.name], 'lp64', 'i32', is_mut, is_flag_in, query_param)
+        ilp64_params[slot] = _array_param_arm(ilp64_lines, ilp64_writeback, p, array_params[p.name], 'ilp64', 'i64', is_mut, is_flag_in, query_param)
 
     lp64_wb_str = '\n'.join(lp64_writeback)
     ilp64_wb_str = '\n'.join(ilp64_writeback)
