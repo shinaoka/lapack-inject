@@ -37,9 +37,10 @@
 //!
 //! - `xGESV`, `xGETRF`, `xGETRS`, `xGETRI`, `xPOTRF`
 //! - `xGESVD`
-//! - `xGEQRF`, real `xORGQR`, complex `xUNGQR`
+//! - `xGEQRF`, real `xORGQR`/`xORMQR`, complex `xUNGQR`/`xUNMQR`
+//! - `xGEQP3` (column-pivoted QR)
 //! - `xTRTRS`
-//! - `s/dSYEV`, `c/zHEEV`
+//! - `s/dSYEV`, `s/dSYEVD`, `c/zHEEV`
 //! - `xGEEV`
 //! - supplemental complete-pivoting LU routines `xGETC2` and `xGESC2`
 //!
